@@ -1,0 +1,27 @@
+{
+  "name": "drpy-webpack",
+  "version": "1.0.1",
+  "main": "webpack.config.js",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.js"
+  },
+  "engines": {
+    "node": ">21 <23"
+  },
+  "repository": "https://github.com/hjdhnx/drpy-webpack.git",
+  "author": "晚风拂柳颜 <434857005@qq.com>",
+  "description": "道长修仙，法力无边。一统江湖，只需半年。\n君子袒蛋蛋，小人藏鸡鸡。",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
+    "@babel/preset-env": "^7.28.0",
+    "babel-loader": "^10.0.0",
+    "script-loader": "^0.7.2",
+    "terser-webpack-plugin": "^5.3.14",
+    "webpack": "^5.100.2",
+    "webpack-cli": "^6.0.1"
+  }
+}
