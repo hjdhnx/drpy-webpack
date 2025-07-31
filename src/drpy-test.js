@@ -1,4 +1,5 @@
-import {cheerio, 模板} from '../dist/drpy-core.min.js';
+// import {cheerio, 模板} from '../dist/drpy-core.min.js';
+import {cheerio, 模板} from '../dist/drpy-core-lite.min.js';
 // import {cheerio, JSONPath, TextDecoder, TextEncoder, 模板} from './drpy-core.js';
 
 console.log('typeof 模板:', typeof (模板))

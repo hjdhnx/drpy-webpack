@@ -1,8 +1,18 @@
-import {cheerio, 模板} from '../dist/drpy-core.min.js';
+// import {cheerio, 模板} from '../dist/drpy-core.min.js';
+import {cheerio, 模板} from '../dist/drpy-core-lite.min.js';
 
 let vercode = typeof (pdfl) === 'function' ? 'drpy2.1' : 'drpy2';
-const VERSION = vercode + ' 3.9.52beta2 20250729';
+const VERSION = vercode + ' 3.9.52beta3 20250801';
 const UpdateInfo = [
+    {
+        date: '20250801',
+        title: 'drpy依赖更新，使用drpy-core-lite.min.js',
+        version: '3.9.52beta3 20250801',
+        msg: `
+drpy-core.min.js 更换为更小的drpy-core-lite.min.js
+ 
+       `
+    },
     {
         date: '20250729',
         title: 'drpy更新，所有依赖打包成一个js文件',
@@ -64,10 +74,10 @@ function init_test() {
     // print(模板);
     // print(typeof(模板.getMubans));
     console.log("当前版本号:" + VERSION);
-
+    /*
     console.log('typeof 模板:', typeof (模板))
     console.log('typeof cheerio:', typeof (cheerio))
-// console.log(模板)
+    // console.log(模板)
     console.log('typeof gbkTool:', typeof gbkTool);
     console.log('typeof CryptoJS:', typeof CryptoJS);
     console.log('typeof JSEncrypt:', typeof JSEncrypt);
@@ -91,7 +101,7 @@ function init_test() {
 
     console.log(cheerio.jinja2('渲染一个变量{{hash}}', {hash}));
     console.log('jsonpath取值测试:', cheerio.jp('$.name', {name: '道长', project: 'drpys'}));
-
+    */
 
     console.log('本地代理地址:' + getProxyUrl());
     console.log(RKEY);

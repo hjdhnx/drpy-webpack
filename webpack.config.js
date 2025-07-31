@@ -12,10 +12,29 @@ const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
     mode: 'production',
-    entry: './src/drpy-core.js',
+    // entry: './src/drpy-core.js',
+    // output: {
+    //     path: path.resolve(__dirname, 'dist'),
+    //     filename: 'drpy-core.min.js',
+    //     library: {
+    //         type: 'module'
+    //     },
+    //     environment: {
+    //         module: true
+    //     }
+    // },
+
+    // 1. 配置多个入口文件
+    entry: {
+        'drpy-core': './src/drpy-core.js',       // 完整版入口
+        'drpy-core-lite': './src/drpy-core-lite.js',       // lite版入口
+    },
+
     output: {
+        // 2. 使用 [name] 占位符生成对应输出文件
         path: path.resolve(__dirname, 'dist'),
-        filename: 'drpy-core.min.js',
+        filename: '[name].min.js',  // 输出格式：main.bundle.js, admin.bundle.js 等
+        clean: true, // 构建前清理输出目录
         library: {
             type: 'module'
         },
@@ -23,6 +42,7 @@ module.exports = {
             module: true
         }
     },
+
     performance: {
         maxEntrypointSize: 2048000, // 默认250kb，单位字节
         maxAssetSize: 2048000
@@ -62,7 +82,7 @@ module.exports = {
             },
             {
                 // 匹配需要作为全局脚本加载的文件
-                test: /(gb18030|crypto-js|jsencrypt|node-rsa|pako|json5|jsonpathplus|jinja|polywasm|encoding|xxhash-wasm)\.min\.js$/,
+                test: /(gb18030|crypto-js|jsencrypt|node-rsa|pako|json5|jsonpathplus|jinja|polywasm|encoding|EncoderDecoder|xxhash-wasm)\.min\.js$/,
                 use: ['script-loader']
             }
         ]
