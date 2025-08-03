@@ -18,18 +18,18 @@ import './libs/xxhash-wasm.min.js';
 
 
 // 确保全局依赖可用
-
-const gbkTool = globalThis.gbkTool;
-const CryptoJS = globalThis.CryptoJS;
-const JSEncrypt = globalThis.JSEncrypt;
-const NODERSA = globalThis.NODERSA; // lite版弃用
-const pako = globalThis.pako;
-const JSON5 = globalThis.JSON5;
-const JSONPath = globalThis.JSONPath;
-const jinja = globalThis.jinja;
-const WebAssembly = globalThis.WebAssembly;
-const TextEncoder = globalThis.TextEncoder;
-const TextDecoder = globalThis.TextDecoder;
+const g = globalThis;
+const gbkTool = g.gbkTool;
+const CryptoJS = g.CryptoJS;
+const JSEncrypt = g.JSEncrypt;
+const NODERSA = g.NODERSA; // lite版弃用
+const pako = g.pako;
+const JSON5 = g.JSON5;
+const JSONPath = g.JSONPath;
+const jinja = g.jinja;
+const WebAssembly = g.WebAssembly;
+const TextEncoder = g.TextEncoder;
+const TextDecoder = g.TextDecoder;
 
 /*
 patch打补丁开始

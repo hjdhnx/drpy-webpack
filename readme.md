@@ -28,3 +28,12 @@ yarn add script-loader --dev
 ```
 
 执行编译的时候需要去掉package.json里的  `"type": "module",`，执行drpy-test.js测试的时候需要加回去
+
+### 新增esbuild打包
+
+已知问题。打包后的东西全局变量不正常，没法用，先研究到这儿，后面有时间再说。
+唯一看中的优势就是这个打包工具比webpack来说速度贼快，速度超越 `vite` `rollup` 直逼 `rolldown`!
+
+```shell
+yarn add esbuild @esbuild-plugins/node-modules-polyfill --dev
+```
