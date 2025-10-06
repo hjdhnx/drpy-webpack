@@ -15,6 +15,7 @@ import './libs/jsonpathplus.min.js';
 import './libs/jinja.min.js';
 import './libs/polywasm.min.js';
 import './libs/xxhash-wasm.min.js';
+export {Buffer} from './libs/buffer.min.js'
 
 
 // 确保全局依赖可用

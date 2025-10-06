@@ -3,10 +3,10 @@
   "version": "1.0.2",
   "main": "webpack.config.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "esbuild": "node esbuild.config.js"
+    "build": "webpack --config webpack.config.cjs",
+    "esbuild": "node esbuild.config.cjs"
   },
-  "type": "module",
+
   "engines": {
     "node": ">21 <23"
   },

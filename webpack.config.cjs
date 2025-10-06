@@ -82,7 +82,7 @@ module.exports = {
             },
             {
                 // 匹配需要作为全局脚本加载的文件
-                test: /(gb18030|crypto-js|jsencrypt|node-rsa|pako|json5|jsonpathplus|jinja|polywasm|encoding|EncoderDecoder|xxhash-wasm)\.min\.js$/,
+                test: /(gb18030|crypto-js|jsencrypt|node-rsa|pako|json5|jsonpathplus|jinja|polywasm|encoding|EncoderDecoder|xxhash-wasm|buffer)\.min\.js$/,
                 use: ['script-loader']
             }
         ]
