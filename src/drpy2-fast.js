@@ -1,5 +1,4 @@
-// import {cheerio, 模板} from '../dist/drpy-core.min.js';
-import {cheerio, 模板, Buffer} from '../dist/drpy-core-lite.min.js';
+import {cheerio, 模板} from '../dist/drpy-core-fast.min.js';
 
 let vercode = typeof (pdfl) === 'function' ? 'drpy2.1' : 'drpy2';
 const VERSION = vercode + ' 3.9.53 20251007';
@@ -3452,16 +3451,40 @@ function getOriginalJs(js_code) {
     let decode_content = '';
 
     function aes_decrypt(data) {
-        let key = CryptoJS.enc.Hex.parse("686A64686E780A0A0A0A0A0A0A0A0A0A");
-        let iv = CryptoJS.enc.Hex.parse("647A797964730A0A0A0A0A0A0A0A0A0A");
-        let encrypted = CryptoJS.AES.decrypt({
-            ciphertext: CryptoJS.enc.Base64.parse(data)
-        }, key, {
-            iv: iv,
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7
-        }).toString(CryptoJS.enc.Utf8);
-        return encrypted;
+        // 将密钥和IV从十六进制字符串转换为Uint8Array
+        const keyHex = "686A64686E780A0A0A0A0A0A0A0A0A0A";
+        const ivHex = "647A797964730A0A0A0A0A0A0A0A0A0A";
+        const keyArray = new Uint8Array(Buffer.from(keyHex, "hex"));
+        const ivArray = new Uint8Array(Buffer.from(ivHex, "hex"));
+
+        // 将Base64编码的数据转换为Uint8Array
+        const encryptedArray = new Uint8Array(Buffer.from(data, "base64"));
+
+        // 导入密钥
+        const key = crypto.subtle.importKey(
+            "raw",
+            keyArray,
+            { name: "AES-CBC" },
+            false,
+            ["decrypt"]
+        );
+        try {
+            // 解密
+            const decryptedArray = crypto.subtle.decrypt(
+                {
+                    name: "AES-CBC",
+                    iv: ivArray,
+                },
+                key,
+                encryptedArray
+            );
+            // 将解密后的Uint8Array转换为字符串
+            const decryptedString = new TextDecoder().decode(decryptedArray);
+            return decryptedString;
+        } catch (e) {
+            console.error("解密失败:", e);
+            return null;
+        }
     }
 
     let error_log = false;
@@ -3736,6 +3759,7 @@ function init(ext) {
         init_test();
     } catch (e) {
         console.log(`init_test发生错误:${e.message}`);
+        throw e;
     }
 }
 

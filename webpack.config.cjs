@@ -28,6 +28,7 @@ module.exports = {
     entry: {
         'drpy-core': './src/drpy-core.js',       // 完整版入口
         'drpy-core-lite': './src/drpy-core-lite.js',       // lite版入口
+        'drpy-core-fast': './src/drpy-core-fast.js',       // lite版入口
     },
 
     output: {
