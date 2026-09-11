@@ -1,6 +1,6 @@
 // utils：URL/文本工具（设计 §9 text/utils）。语义基准 = src/drpy2.js 同名函数。
 // 库全局（CryptoJS 等）以 peer 方式引用 dist/drpy-core-lite.min.js，勿重造。
-import {jinja} from '../../../dist/drpy-core-lite.min.js';
+import {jinja} from './peer.js';
 
 // UA 常量（drpy2.js:375-379 原值）
 export const UA = {

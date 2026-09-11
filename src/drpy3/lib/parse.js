@@ -1,6 +1,6 @@
 // parse：解析域标准库（设计 §9 parse）。pdfh/pdfa/pd/pdfl 由 HostEnv 注入（jsoup 语义，勿重造），
 // 框架提供 pdfl 逐元素回退、jp/jinja2（peer cheerio.jinja2/jp）、parseRule（字符串规则解析，W5）。
-import {cheerio, 模板} from '../../../dist/drpy-core-lite.min.js';
+import {cheerio, 模板} from './peer.js';
 import {parseRule} from '../rules/parseRule.js';
 
 export function makeParse(rt) {

@@ -5,7 +5,7 @@
 import {Drpy3Error} from '../errors.js';
 import {hashStr} from '../lifecycle.js';
 import {wordArrayToBytes} from './crypto.js';
-import {CryptoJS} from '../../../dist/drpy-core-lite.min.js';
+import {CryptoJS} from './peer.js';
 
 function isWasmBytes(bytes) {
     return bytes && bytes.length >= 4 && bytes[0] === 0x00 && bytes[1] === 0x61 && bytes[2] === 0x73 && bytes[3] === 0x6d;

@@ -41,7 +41,8 @@ function clean(s) {
  * 解析列表规则为 vod 数组
  * @param ruleStr 'json:data.list;title;img;desc;id'（json:/jsp:/jq: 前缀，缺省 jq）
  * @param ctx 调用上下文（ctx.url 为请求目标；ctx.rule.detailUrl 影响 id 是否走 pd）
- * @param opts {html} 可选：调用方已持有响应体时直接传入，免重复请求
+ * @param opts {html, catePrefix} html：调用方已持有响应体时直接传入；catePrefix：声明式一级的分类 id 前缀
+ *   （drpy2 语义：rule.detailUrl 存在时 vod_id = 分类$id，供 detail 还原；钩子/高级源调用不传则不带前缀）
  */
 export async function parseRule(ruleStr, ctx, opts = {}) {
     const rule = String(ruleStr == null ? '' : ruleStr).trim();
@@ -77,6 +78,7 @@ export async function parseRule(ruleStr, ctx, opts = {}) {
     if (!Array.isArray(list)) return [];
 
     // 字段提取：id 段支持 '+' 拼接（drpy2 links 语义：有 detailUrl 走 pdfh（相对地址由壳子拼），无则 pd 补全）
+    const prefix = opts.catePrefix != null && opts.catePrefix !== '' && detailUrl ? opts.catePrefix + '$' : '';
     const out = [];
     for (const it of list) {
         try {
@@ -91,7 +93,7 @@ export async function parseRule(ruleStr, ctx, opts = {}) {
             const idOf = (sel) => (detailUrl ? nameOf(sel) : (kind === 'json' ? picOf(sel) : parse.pd(it, sel, MY_URL)));
             const links = p[4].split('+').map(idOf);
             out.push({
-                vod_id: links.join('$'),
+                vod_id: prefix + links.join('$'),
                 vod_name: nameOf(p[1]),
                 vod_pic: picOf(p[2]),
                 vod_remarks: nameOf(p[3]),

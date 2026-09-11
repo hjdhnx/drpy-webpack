@@ -85,9 +85,25 @@ export const sourceProto = {
         }
     },
 
-    /** rule 定稿 ①②（headers 基线/fetchParams 基线），_warm 与热更失败回退共用 */
+    /** rule 定稿 ①②（host/url 拼接 + headers 基线/fetchParams 基线），_warm 与热更失败回退共用 */
     _finalizeRule() {
         const rule = {...this.rawRule};
+        const join = (base, u) => this.rt.resolve('joinUrl')(base, u);
+        const joinMaybe = (u) => {
+            if (!u) return '';
+            const str = String(u);
+            if (str.includes('[') && str.includes(']')) {
+                const u1 = str.split('[')[0];
+                const u2 = str.split('[')[1].split(']')[0];
+                return (rule.host ? join(rule.host, u1) : u1) + '[' + (rule.host ? join(rule.host, u2) : u2) + ']';
+            }
+            return rule.host ? join(rule.host, str) : str;
+        };
+        rule.host = String(rule.host || this.meta.host || '').replace(/\/+$/, '');
+        rule.homeUrl = rule.host && rule.homeUrl ? join(rule.host, rule.homeUrl) : (rule.homeUrl || rule.host);
+        rule.detailUrl = rule.host && rule.detailUrl ? join(rule.host, rule.detailUrl) : (rule.detailUrl || '');
+        rule.url = joinMaybe(rule.url || '');
+        rule.searchUrl = joinMaybe(rule.searchUrl || '');
         rule.headers = resolveUaConstants({...((rule.headers && typeof rule.headers === 'object') ? rule.headers : {})});
         rule.timeout = rule.timeout || 5000;
         rule.encoding = rule.encoding || rule.编码 || 'utf-8';

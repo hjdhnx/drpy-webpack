@@ -1,5 +1,5 @@
 // text：文本工具（设计 §9）。语义基准 = src/drpy2.js 同名函数。GBK 编解码走 peer gbkTool。
-import {gbkTool} from '../../../dist/drpy-core-lite.min.js';
+import {gbkTool} from './peer.js';
 import {UA, urlencode} from './utils.js';
 
 export {urlencode};

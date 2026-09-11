@@ -4,6 +4,7 @@ import {memoryStore} from './lib/store.js';
 import {builtinJoinUrl} from './lib/utils.js';
 import {detectForm, createSource, LifecycleManager, hashStr} from './lifecycle.js';
 import {evalSourceNeutral} from './modules/loader.js';
+import {defaults as declarativeDefaults} from './rules/defaults.js';
 import {Drpy3Error} from './errors.js';
 
 // 框架有内置兜底的 HostEnv 字段（缺注入不致命，走兜底并在 capabilities 标注）
@@ -43,7 +44,7 @@ export class Runtime {
         this.hostEnv.env = hostEnv.env || {};
         this.#memStore = memoryStore();
         this.pinList = hostEnv.pinList || [];  // 壳子钉住的高频源（§4.6）
-        this.defaults = null;                  // 声明式默认实现（规则引擎，W6 注入）
+        this.defaults = declarativeDefaults;   // 声明式默认实现（规则引擎，§9/附录D 阶段3-4）
         this.lifecycle = new LifecycleManager(this, hostEnv.lifecycle || {}); // 实例生命周期治理（§4.6）
         this.check();
     }

@@ -1,6 +1,6 @@
 // crypto：加密域标准库（设计 §9 crypto）。库能力全部来自 peer dist/drpy-core-lite.min.js
 // （CryptoJS/JSEncrypt/NODERSA/pako/gbkTool），不重造。纯 CPU 函数保持同步（§5.1）。
-import {CryptoJS, pako, JSEncrypt, NODERSA} from '../../../dist/drpy-core-lite.min.js';
+import {CryptoJS, pako, JSEncrypt, NODERSA} from './peer.js';
 import {Drpy3Error} from '../errors.js';
 
 export function md5(text) {
