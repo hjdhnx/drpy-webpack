@@ -153,12 +153,22 @@ fjs 对接要点（已核实其 Cargo.toml 与 README）：
 
 > 完成一个 WP：把 ⬜ 改 ✅（部分完成 🚧 并注明余项），随该 WP 的 commit 一起提交。
 
-- W0 ✅ ｜ W1 ✅ ｜ W2 ⬜ ｜ W3 ⬜ ｜ W4 ⬜ ｜ W5 ⬜ ｜ W6 ⬜
-- W7 ✅ ｜ W8 ⬜ ｜ W9 ⬜ ｜ W10 ⬜ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜ ｜ W14 ⬜
+- W0 ✅ ｜ W1 ✅ ｜ W2 ✅ ｜ W3 ✅ ｜ W4 ✅ ｜ W5 ✅ ｜ W6 ✅
+- W7 ✅ ｜ W8 ✅ ｜ W9 ✅ ｜ W10 ✅ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜ ｜ W14 ⬜
 
 > W0 备注：`src/drpy3/` 骨架 + `test/smoke.test.mjs`（drpy2 附录 C 六环节回归锚，独立进程 mock
 > 复刻自 .smoke/ 并扩展了央视频形状）。本机（Git Bash）`node --test test/` 目录参数有兼容问题，
 > 验证命令用 `node --test test/*.test.mjs`（bash 展开）。
+>
+> **W0-W10 会话完成注记（2026-09-12）**：三个金标准全绿——A 百忙无果1（test/w6-bm1.test.mjs）、
+> B 央视频-1 六环节 + wasm 代理解密（test/w10-cntv1.test.mjs）、C 百忙无果[官] 原版零改动经
+> load2x（test/w9-load2x.test.mjs）；六标杆源 `drpy3 test --record/--replay` 全绿，fixtures 入库
+> docs/fixtures/。产物 `dist/drpy3.esm.min.js`（esbuild --platform=neutral 通过，npm run build:drpy3）。
+> 实现注意：① core-lite 的 polywasm/node-fetch 覆盖全局 → src/drpy3/lib/peer.js + native-globals.js
+> 装载守卫恢复原生全局（Node undici 依赖原生 WebAssembly）；② js: 片段内 request() 为 drpy2 老语义
+> （返回响应文本，withHeaders 为 JSON 串）；③ load2x 需宿主注入 syncReq 同步桥（Node 用 curl 子进程）；
+> ④ 模式 C 需同步 loadAsset。余项（非阻塞，W11-W14 对接时按需补）：对象形态二级 tabs/lists 完整
+> 语义、fixAdM3u8Ai、getOriginalJs/OcrApi、types/drpy3.d.ts、GBK 搜索编码。
 
 ---
 

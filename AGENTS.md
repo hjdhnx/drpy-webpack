@@ -21,7 +21,8 @@ drpy2 源规则引擎的 webpack/esbuild 打包仓库（`src/drpy2.js` + `dist/d
 - 实现 drpy3：按任务书 WP 顺序，先写验收测试再实现；完成一个 WP 提交一个（`drpy3(W#):` 前缀），
   并更新任务书 §4 进度表。
 - 涉及设计变更：先改 `drpy3-设计文档.md` 并在附录 A 记录理由，再改代码。
-- 验证命令：`node --test test/`；演示稿语法检查可用 `node --check`（ESM）。
+- 验证命令：`node --test test/*.test.mjs`（本机 Git Bash 下 `node --test test/` 目录参数有兼容问题）；
+  drpy3 单测/CLI：`npm run test:drpy3`、`node cli/drpy3-test.mjs <源.js> --replay`；演示稿语法检查可用 `node --check`（ESM）。
 - `src/drpy2.js` 与 `dist/` 是 drpy2 现网资产，非任务书范围不要动。
 - 本地 `.smoke/` 是 drpy2 冒烟脚手架（已 gitignore，不入库）。
 

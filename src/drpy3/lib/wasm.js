@@ -169,7 +169,7 @@ export function makeWasm(rt) {
                 throw new Drpy3Error('wasm', 'load', `HostEnv 未注入 loadAsset——无法读取随源 wasm 资产: ${source}`);
             }
             return await loadCached('path:' + source, async () => {
-                const content = await loader(source);
+                let content = await loader(source);
                 if (content instanceof Uint8Array) {
                     if (isWasmBytes(content)) return await compileWasmBytes(content);
                     content = new TextDecoder().decode(content);
