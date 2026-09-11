@@ -172,44 +172,63 @@ export const sourceProto = {
         await this.ensureHot();
     },
 
+    /** 通用环节调用（CLI drpy3 test / 壳子动态分发共用）：按 stage 组装调用态并调度 */
+    async callStage(stage, ...args) {
+        const fn = stage;
+        const ctxMap = {
+            home: () => ({}),
+            homeVod: () => ({}),
+            category: () => ({fl: args[3] || {}, pg: args[1] || 1}),
+            detail: () => ({input: args[0], url: ''}),
+            play: () => ({flag: args[0], input: args[1], url: args[1]}),
+            search: () => ({wd: args[0], quick: !!args[1], pg: args[2] || 1}),
+            proxy: () => ({input: args[0]}),
+            action: () => ({input: args[1]}),
+            sniffer: () => ({}),
+            isVideo: () => ({input: args[0], url: args[0]}),
+        };
+        const build = ctxMap[stage] || (() => ({}));
+        return this._dispatch(stage, args, build(), fn);
+    },
+
     async home(filter) {
-        return this._dispatch('home', [filter], {}, 'home');
+        return this.callStage('home', filter);
     },
 
     async homeVod(params) {
-        return this._dispatch('homeVod', [params], {}, 'homeVod');
+        return this.callStage('homeVod', params);
     },
 
     async category(tid, pg, filter, extend) {
-        return this._dispatch('category', [tid, pg, filter, extend], {fl: extend || {}, pg: pg || 1}, 'category');
+        return this.callStage('category', tid, pg, filter, extend);
     },
 
     async detail(id) {
-        return this._dispatch('detail', [id], {input: id, url: ''}, 'detail');
+        return this.callStage('detail', id);
     },
 
     async play(flag, id, flags) {
-        return this._dispatch('play', [flag, id, flags], {flag, input: id, url: id}, 'play');
+        return this.callStage('play', flag, id, flags);
     },
 
     async search(wd, quick, pg) {
-        return this._dispatch('search', [wd, quick, pg], {wd, quick: !!quick, pg: pg || 1}, 'search');
+        return this.callStage('search', wd, quick, pg);
     },
 
     async proxy(params) {
-        return this._dispatch('proxy', [params], {input: params}, 'proxy');
+        return this.callStage('proxy', params);
     },
 
     async action(action, value) {
-        return this._dispatch('action', [action, value], {input: value}, 'action');
+        return this.callStage('action', action, value);
     },
 
     async sniffer() {
-        return this._dispatch('sniffer', [], {}, 'sniffer');
+        return this.callStage('sniffer');
     },
 
     async isVideo(url) {
-        return this._dispatch('isVideo', [url], {input: url, url}, 'isVideo');
+        return this.callStage('isVideo', url);
     },
 };
 
