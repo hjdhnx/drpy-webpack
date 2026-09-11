@@ -142,20 +142,16 @@ export const defaults = {
         return {page: parseInt(pg) || 1, pagecount, limit: 20, total: 999, list: d};
     },
 
-    /** 二级详情：js: 片段（VOD）/ '*'直连 / 对象形态（title/desc/tabs/lists，drpy2 detailParse 语义） */
-    async detail(ctx, id) {
+    /** 二级详情：js: 片段（VOD）/ '*'直连 / 对象形态（title/desc/tabs/lists，drpy2 detailParse 语义）。
+     *  id=壳子已剥「分类$」前缀的 id；fullId=原始全文（用于 vod_id 还原，drpy2 保留原文） */
+    async detail(ctx, id, fullId) {
         const rule = ctx.rule;
-        let orId = String(id == null ? '' : id);
-        let fyclass = '';
-        if (orId.includes('$')) {
-            const tmp = orId.split('$');
-            fyclass = tmp[0];
-            orId = tmp.slice(1).join('$');
-        }
+        const orId = String(id == null ? '' : id);
         const detailId = orId.split('@@')[0];
         let url;
         if (!detailId.startsWith('http') && !detailId.includes('/')) {
-            url = (rule.detailUrl || '').replaceAll('fyid', detailId).replaceAll('fyclass', fyclass);
+            // 「分类$」路由前缀已在壳子 detail() 入口剥除，fyclass 占位符不再有值
+            url = (rule.detailUrl || '').replaceAll('fyid', detailId).replaceAll('fyclass', '');
         } else if (detailId.includes('/')) {
             url = ctx.lib.utils.joinUrl(rule.homeUrl || rule.host, detailId);
         } else {
@@ -165,8 +161,8 @@ export const defaults = {
         ctx.input = url;
         const p = rule.二级;
         let vod = {
-            vod_id: id, vod_name: '片名', vod_pic: '', type_name: '类型', vod_year: '年份', vod_area: '地区',
-            vod_remarks: '更新信息', vod_actor: '主演', vod_director: '导演', vod_content: '简介',
+            vod_id: fullId != null ? fullId : id, vod_name: '片名', vod_pic: '', type_name: '类型', vod_year: '年份',
+            vod_area: '地区', vod_remarks: '更新信息', vod_actor: '主演', vod_director: '导演', vod_content: '简介',
         };
         if (rule.二级访问前 && typeof rule.二级访问前 === 'string') {
             await evalFragment('二级访问前', stripJs(rule.二级访问前), ctx, {});
@@ -181,7 +177,7 @@ export const defaults = {
         if (typeof p === 'string' && p.trim().startsWith('js:')) {
             const scope = await evalFragment('二级', stripJs(p), ctx, {TYPE: 'detail', play_url: ''});
             vod = scope.VOD || vod;
-            if (!vod.vod_id || (String(id).includes('$') && vod.vod_id !== id)) vod.vod_id = id;
+            if (!vod.vod_id || (fullId && vod.vod_id !== fullId)) vod.vod_id = fullId != null ? fullId : id;
             return {list: [vod]};
         }
         if (p && typeof p === 'object') {
@@ -230,7 +226,7 @@ export const defaults = {
             }
             vod.vod_play_from = playFrom.join('$$$');
             vod.vod_play_url = listsOut.join('$$$') || '嗅探播放$' + url;
-            if (!vod.vod_id) vod.vod_id = id;
+            if (!vod.vod_id) vod.vod_id = fullId != null ? fullId : id;
             return {list: [vod]};
         }
         // 无二级规则：一级链接直接嗅探播放

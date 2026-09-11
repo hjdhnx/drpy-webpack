@@ -233,7 +233,11 @@ export const sourceProto = {
     },
 
     async detail(id) {
-        return this.callStage('detail', id);
+        // drpy2 detail() 同语义：vod_id 的「分类$」路由前缀由引擎剥除后再进二级
+        // （钩子拿到纯 id；声明式 defaults 用原始全文还原 vod_id）
+        const raw = String(id == null ? '' : id);
+        const hookId = raw.includes('$') ? raw.slice(raw.indexOf('$') + 1) : raw;
+        return this._dispatch('detail', [hookId, raw], {input: raw, url: ''}, 'detail');
     },
 
     async play(flag, id, flags) {

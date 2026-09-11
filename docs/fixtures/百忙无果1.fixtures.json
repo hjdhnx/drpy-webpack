@@ -6,7 +6,7 @@
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:14:59 GMT",
+   "date": "Fri, 11 Sep 2026 20:25:43 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "433"
@@ -15,24 +15,24 @@
  {
   "key": "GET|b0|http://drpy3.mock/msite/search/v2?q=斗罗大陆&pn=1&pc=10",
   "url": "http://drpy3.mock/msite/search/v2?q=斗罗大陆&pn=1&pc=10",
-  "content": "{\"data\":{\"contents\":[{\"type\":\"media\",\"data\":[{\"desc\":[\"2023\",\"动漫\"],\"source\":\"imgo\",\"img\":\"http://img.example.com/s.jpg\",\"rpt\":\"idx=50&other=1\",\"title\":\"<B>斗罗大陆</B>\",\"url\":\"http://127.0.0.1:20699/b/999/vid9.html\"}]}]}}",
+  "content": "{\"data\":{\"contents\":[{\"type\":\"media\",\"data\":[{\"desc\":[\"2023\",\"动漫\"],\"source\":\"imgo\",\"img\":\"http://img.example.com/s.jpg\",\"rpt\":\"idx=50&other=1\",\"title\":\"<B>斗罗大陆</B>\",\"url\":\"http://127.0.0.1:19991/b/999/vid9.html\"}]}]}}",
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:14:59 GMT",
+   "date": "Fri, 11 Sep 2026 20:25:43 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "229"
   }
  },
  {
-  "key": "GET|b0|http://drpy3.mock/episode/list?page=1&size=50&video_id=2$vid1",
-  "url": "http://drpy3.mock/episode/list?page=1&size=50&video_id=2$vid1",
+  "key": "GET|b0|http://drpy3.mock/episode/list?page=1&size=50&video_id=vid1",
+  "url": "http://drpy3.mock/episode/list?page=1&size=50&video_id=vid1",
   "content": "{\"data\":{\"list\":[{\"url\":\"/b/999/vid1.html\",\"t4\":\"第1集\",\"t2\":\"24分钟\",\"img\":\"http://img.example.com/e.jpg\",\"isIntact\":\"1\"},{\"url\":\"/b/999/vid2.html\",\"t4\":\"第2集\",\"t2\":\"48分钟\",\"img\":\"http://img.example.com/e.jpg\",\"isIntact\":\"1\"}],\"total\":2,\"total_page\":1,\"series\":[]}}",
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:14:59 GMT",
+   "date": "Fri, 11 Sep 2026 20:25:43 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "276"
@@ -45,7 +45,7 @@
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "text/html; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:14:59 GMT",
+   "date": "Fri, 11 Sep 2026 20:25:43 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "470"

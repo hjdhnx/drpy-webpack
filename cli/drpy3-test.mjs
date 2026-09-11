@@ -200,12 +200,13 @@ async function main() {
             if (cate.list[0]) { vodId = cate.list[0].vod_id; playFrom = cate.list[0].vod_play_from || ''; }
             return {list: cate.list.length, first: cate.list[0] && cate.list[0].vod_id};
         });
-        let searchEmpty = false;
         await step('search', async () => {
             const search = await src.search(opts.wd, false, 1);
             if (!search || typeof search !== 'object') throw new Error('search 返回非对象');
-            if (search.list && search.list[0]) vodId = vodId.includes('$') || vodId.includes('###') ? vodId : (search.list[0].vod_id || vodId);
-            if (!search.list || search.list.length === 0) searchEmpty = true; // live 真站搜索加验/风控常见
+            // search 有结果且当前 vodId 尚未带路由上下文时优先用搜索结果；否则沿用 home/category 的 vod_id
+            if (search.list && search.list[0] && !vodId.includes('$') && !vodId.includes('###')) {
+                vodId = search.list[0].vod_id || vodId;
+            }
             return {list: search.list ? search.list.length : 0};
         });
         const stepSkippable = async (stage, fn, reason) => {
@@ -222,12 +223,12 @@ async function main() {
             playFrom = vod.vod_play_from || playFrom;
             playUrl = String(vod.vod_play_url || '').split('#')[0].split('$').slice(1).join('$');
             return {name: vod.vod_name, eps: String(vod.vod_play_url || '').split('#').length};
-        }, searchEmpty ? 'search 无结果（真站搜索加验/风控），无有效 vod_id 可测 detail' : '');
+        }, !vodId ? 'search/category 均无 vod_id，无法测 detail' : '');
         await stepSkippable('play', async () => {
             const play = await src.play(playFrom, playUrl, []);
             if (!play || !('url' in play) && !('urls' in play)) throw new Error('play 未返回 url/urls');
             return {parse: play.parse, jx: play.jx, url: (play.url || (play.urls && play.urls[1]) || '').slice(0, 80)};
-        }, searchEmpty ? '同上，detail 跳过则 play 跳过' : '');
+        }, !playUrl ? '无有效选集链接' : '');
     }
     if (mock) mock.child.kill();
     fs.rmSync(stageDir, {recursive: true, force: true});
