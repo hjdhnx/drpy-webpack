@@ -54,6 +54,19 @@ function makeSyncNet(rt, ctx) {
 
 export function buildFragmentScope(ctx, extra = {}) {
     const syncCall = ctx.__sync ? makeSyncNet(ctx.__rt, ctx) : null;
+    // 片段内 request() 的 drpy2 老语义：返回响应文本（withHeaders → headers+body JSON 串）
+    const unwrap = (res, o) => {
+        if (o && o.withHeaders && res && typeof res === 'object') {
+            return JSON.stringify({...((res.headers) || {}), body: res.content == null ? '' : String(res.content)});
+        }
+        return res && typeof res === 'object' && 'content' in res ? res.content : res;
+    };
+    const asyncReq = async (u, o, method) => {
+        const res = await ctx.lib.net.req(u, {...(o || {}), ...(method ? {method} : {})});
+        return unwrap(res, o);
+    };
+    const request = (u, o) => (syncCall ? syncCall(u, o, 'GET') : asyncReq(u, o, 'GET'));
+    const post = (u, o) => (syncCall ? syncCall(u, o, 'POST') : asyncReq(u, o, 'POST'));
     const scope = {
         // ═══ 调用态回显（drpy2 全局名）═══
         input: ctx.input !== undefined ? ctx.input : (ctx.url || ''),
@@ -65,10 +78,11 @@ export function buildFragmentScope(ctx, extra = {}) {
         MY_PAGE: ctx.pg || 1,
         MY_FL: ctx.fl || {},
         fetch_params: ctx.fetchParams,
-        // ═══ net（老名 request/fetch/post/batchFetch；load2x 片段走同步桥，drpy2 同步语义）═══
-        request: (u, o) => (syncCall ? syncCall(u, o, 'GET') : ctx.lib.net.request(u, o)),
-        fetch: (u, o) => (syncCall ? syncCall(u, o, 'GET') : ctx.lib.net.request(u, o)),
-        post: (u, o) => (syncCall ? syncCall(u, o, 'POST') : ctx.lib.net.post(u, o)),
+        // ═══ net（老名 request/fetch/post；片段内保持 drpy2 老语义——request() 即响应文本，
+        //     withHeaders 时为 headers+body 的 JSON 串；load2x 片段走同步桥 §5.4 档 C）═══
+        request,
+        fetch: request,
+        post,
         reqCookie: (u, o, a) => ctx.lib.net.reqCookie(u, o, a),
         batchFetch: (items) => ctx.lib.net.batchFetch(items),
         // ═══ parse（pdf 三件套 + jsp/jq 句柄 + pdfl）═══
