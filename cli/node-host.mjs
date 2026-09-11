@@ -14,7 +14,11 @@ import {pathToFileURL, fileURLToPath} from 'node:url';
 const PARSER_URL = process.env.DRPY_HTML_PARSER
     ? pathToFileURL(process.env.DRPY_HTML_PARSER).href
     : 'file:///E:/gitwork/drpy-node/libs_drpy/htmlParser.js';
-const {jsoup} = await import(PARSER_URL);
+const nativeLog = console.log;
+console.log = () => {}; // 仅解析器模块求值窗口内静默初始化日志
+const _parserMod = await import(PARSER_URL);
+console.log = nativeLog;
+const jsoup = _parserMod.jsoup;
 
 const HERE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CORE_INDEX_URL = pathToFileURL(path.resolve(HERE_DIR, '..', 'src', 'drpy3', 'index.js')).href;

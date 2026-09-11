@@ -6,10 +6,12 @@
 // native-globals.js（无依赖，进程内最先求值）快照原生引用，core-lite 装载后在此恢复；
 // polywasm 仍可经本模块导出的 WebAssembly 使用（宿主无关兜底）。
 // 这不是"全局注入回归"（附录 A 否决的是给源代码挂全局名）——只是集成防护。
-import {nativeWasm, nativeFetch, nativeTextEncoder} from './native-globals.js';
+import {nativeWasm, nativeFetch, nativeTextEncoder, nativeConsoleError} from './native-globals.js';
 
 export * from '../../../dist/drpy-core-lite.min.js';
 
+// core-lite 求值完成：恢复原生全局 + script-loader 噪音过滤器（见 native-globals.js）
 if (nativeWasm && globalThis.WebAssembly !== nativeWasm) globalThis.WebAssembly = nativeWasm;
 if (nativeFetch && globalThis.fetch !== nativeFetch) globalThis.fetch = nativeFetch;
 if (nativeTextEncoder && globalThis.TextEncoder !== nativeTextEncoder) globalThis.TextEncoder = nativeTextEncoder;
+console.error = nativeConsoleError;
