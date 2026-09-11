@@ -147,7 +147,7 @@ req(url, obj)
 
 #### 返回值（关键契约）
 
-必须是 **JS 对象**（不是字符串！）：
+必须是 **JS 对象**（不是字符串！），且必须**同步返回**——drpy2 的 `request()` 调用后立即读取 `res.content`（`drpy2.js:1887-1888`），不支持异步 Promise（实测确认：返回 Promise 时 `res.content` 为 undefined，所有请求拿空）。网络 IO 允许阻塞，参考宿主（quickjs 原生/python 桥/Android/Node 的 XMLHttpRequest 实现）全部是同步调用：
 
 ```js
 {
@@ -291,6 +291,7 @@ hipy 参考：`qjs_drpy.py:76`（注入）、`qjs_drpy.py:159-169`（地址生�
 
 - **引用位置**：`drpy2.js:4`（版本号探测）、`drpy2.js:2950-2954`（二级选集列表解析）。
 - 存在时版本标识为 drpy2.1、列表解析走它（一次调用出整条列表）；不存在走 `pdfa + pdfh/pd` 逐条循环，只是慢些。不注入完全可用。
+- **现成实现**：drpy-node `libs_drpy/htmlParser.js:228`（JS/Node 宿主直接搬）；语义 = 整段列表 HTML 一次解析出 `标题$链接` 数组，批量模式单次 `cheerio.load` + DOM 索引标记，复杂选择器回退逐元素循环。
 
 ### 5.4 其他
 

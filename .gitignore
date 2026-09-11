@@ -138,3 +138,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /.idea/
 /true/
+
+# drpy3 文档本地冒烟脚手架（含 dist 拷贝，不入库）
+.smoke/
