@@ -47,6 +47,7 @@ export class Runtime {
         this.pinList = hostEnv.pinList || [];  // 壳子钉住的高频源（§4.6）
         this.defaults = declarativeDefaults;   // 声明式默认实现（规则引擎，§9/附录D 阶段3-4）
         this.lifecycle = new LifecycleManager(this, hostEnv.lifecycle || {}); // 实例生命周期治理（§4.6）
+        this.actionTimeoutMs = hostEnv.actionTimeoutMs || 60000; // action 通道专用长超时（§10.2）
         this.check();
     }
 

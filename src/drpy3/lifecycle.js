@@ -151,23 +151,36 @@ export const sourceProto = {
         this.pinned = false;
     },
 
-    /** 通用调度：ensureHot → 构造 ctx → 钩子(优先)/声明式默认实现 → 工程化报错包装 */
+    /** 通用调度：ensureHot → 构造 ctx → 钩子(优先)/声明式默认实现 → 工程化报错包装。
+     *  action 通道挂专用长超时（§10.2，默认 60s，HostEnv.actionTimeoutMs 可配） */
     async _dispatch(stage, args, callCtx, hook) {
         await this.ensureHot();
         this.inFlight++;
         try {
             const ctx = buildCtx(this, {stage, resumed: !!this._resumed, ...callCtx});
-            const fn = (hook && typeof this.def[hook] === 'function') ? this.def[hook] : null;
-            if (fn) {
-                const r = await fn.call(this, ctx, ...args);
-                return r === undefined ? {} : r;
+            const invoke = async () => {
+                const fn = (hook && typeof this.def[hook] === 'function') ? this.def[hook] : null;
+                if (fn) {
+                    const r = await fn.call(this, ctx, ...args);
+                    return r === undefined ? {} : r;
+                }
+                const defaults = this.rt.defaults;
+                if (defaults && typeof defaults[stage] === 'function') {
+                    const r = await defaults[stage].call(this, ctx, ...args);
+                    return r === undefined ? {} : r;
+                }
+                if (stage === 'action') return ''; // 交互通道缺省空串（§10.2 降级）
+                throw new Drpy3Error(stage, '', `源未实现 ${hook || stage} 钩子，且无声明式默认实现`);
+            };
+            if (stage === 'action') {
+                const timeoutMs = this.rt.actionTimeoutMs || 60000;
+                return await Promise.race([
+                    invoke(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Drpy3Error('action', '',
+                        `action 通道响应超时(${timeoutMs}ms)——多轮交互/输入类动作需在时限内返回`)), timeoutMs)),
+                ]);
             }
-            const defaults = this.rt.defaults;
-            if (defaults && typeof defaults[stage] === 'function') {
-                const r = await defaults[stage].call(this, ctx, ...args);
-                return r === undefined ? {} : r;
-            }
-            throw new Drpy3Error(stage, '', `源未实现 ${hook || stage} 钩子，且无声明式默认实现`);
+            return await invoke();
         } catch (e) {
             if (e instanceof Drpy3Error) throw e;
             throw new Drpy3Error(stage, '', e, this.meta.title || this.key);
