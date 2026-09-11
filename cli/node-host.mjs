@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import https from 'node:https';
+import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 
 // pdf 三件套实现位置：默认 drpy-node 生产实现（DRPY_HTML_PARSER 环境变量可覆盖）
@@ -123,6 +124,53 @@ export function makeNodeHost(opts = {}) {
                 return {content, headers: outHeaders};
             } catch (e) {
                 // 出错不抛：返回 {content:'', headers:{error}}（drpy2 契约，个别源 try/catch 依赖）
+                return {content: '', headers: {error: String(e && e.message || e)}};
+            }
+        },
+
+        // ═══ syncReq：同步 HTTP 桥（load2x 兼容层片段用，档 C 契约）——curl 子进程模拟原生同步 req ═══
+        syncReq: (url, obj = {}) => {
+            const o = obj || {};
+            const args = ['-sS', '-i', '--max-time', String(Math.min((o.timeout || 5000) / 1000, 30))];
+            if (o.redirect !== 0) args.push('-L');
+            for (const [k, v] of Object.entries(o.headers || {})) args.push('-H', `${k}: ${v}`);
+            const method = (o.method || 'GET').toUpperCase();
+            if (method !== 'GET') {
+                args.push('-X', method);
+                if (o.body != null && o.body !== '') args.push('--data-binary', String(o.body));
+                else if (o.data && Object.keys(o.data).length) args.push('--data-binary', JSON.stringify(o.data));
+            }
+            args.push(encodeURI(url)); // curl 不接受原始非 ASCII URL；encodeURI 保留 ?&= 与已有 %xx
+            try {
+                const buf = execFileSync('curl', args, {encoding: 'buffer', maxBuffer: 64 * 1024 * 1024});
+                const SEP = Buffer.from('\r\n\r\n');
+                let pos = 0, bodyStart = 0, headerLines = [];
+                while (true) {
+                    const idx = buf.indexOf(SEP, pos);
+                    if (idx < 0) break;
+                    const section = buf.slice(pos, idx).toString('latin1');
+                    if (/^HTTP\/[\d.]+\s/.test(section)) {
+                        headerLines = section.split('\r\n');
+                        bodyStart = idx + 4;
+                        pos = bodyStart;
+                    } else break;
+                }
+                const raw = buf.slice(bodyStart);
+                const headers = {status: headerLines[0] || ''};
+                for (const line of headerLines.slice(1)) {
+                    const i = line.indexOf(':');
+                    if (i > 0) headers[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+                }
+                const charset =
+                    (String(headers['content-type'] || '').match(/charset=([\w-]+)/i) || [])[1] || o.encoding || 'utf-8';
+                let content;
+                try {
+                    content = new TextDecoder(charset).decode(raw);
+                } catch {
+                    content = raw.toString('utf8');
+                }
+                return {content: o.buffer === 2 ? raw.toString('base64') : content, headers};
+            } catch (e) {
                 return {content: '', headers: {error: String(e && e.message || e)}};
             }
         },

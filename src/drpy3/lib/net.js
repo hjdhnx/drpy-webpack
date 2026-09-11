@@ -9,7 +9,7 @@ function hasHeader(headers, name) {
 }
 
 /** 组装本次请求 options：合并三层 headers + 默认 UA/Referer + 超时（drpy2 request 语义） */
-function mergeOptions(ctx, url, options) {
+export function mergeOptions(ctx, url, options) {
     const o = {...(options || {})};
     const h = {...(ctx.headers || {}), ...(ctx.fetchParams && ctx.fetchParams.headers || {}), ...(o.headers || {})};
     if (!hasHeader(h, 'user-agent')) h['User-Agent'] = UA.MOBILE_UA;

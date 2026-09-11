@@ -3,6 +3,7 @@
 import {memoryStore} from './lib/store.js';
 import {builtinJoinUrl} from './lib/utils.js';
 import {detectForm, createSource, LifecycleManager, hashStr} from './lifecycle.js';
+import {createSource2x, looksLikeDrpy2} from './compat/drpy2.js';
 import {evalSourceNeutral} from './modules/loader.js';
 import {defaults as declarativeDefaults} from './rules/defaults.js';
 import {Drpy3Error} from './errors.js';
@@ -54,11 +55,14 @@ export class Runtime {
         return this.lifecycle.sweep(opts);
     }
 
-    /** 源装载（附录 D 阶段1）：对象直接建实例；字符串源码走模块求值（W6/W8 loader） */
+    /** 源装载（附录 D 阶段1）：drpy2 特征自动走兼容层；对象直接建实例；字符串源码走模块求值 */
     async load(sourceLike, opts = {}) {
         let def = sourceLike;
         const code = typeof sourceLike === 'string' ? sourceLike : null;
         if (code !== null) {
+            if (!opts.drpy3 && looksLikeDrpy2(code)) {
+                return this.load2x(code, opts); // drpy2 老源零改动（§11）
+            }
             def = await this.evaluateSource(code, opts);
         }
         const src = createSource(this, def, opts);
@@ -74,6 +78,11 @@ export class Runtime {
             return mod && mod.default !== undefined ? mod.default : mod;
         }
         return await evalSourceNeutral(code, opts);
+    }
+
+    /** drpy2 兼容装载（§11）：伪全局映射 + 自动串行；同引擎其他实例并发不受影响 */
+    load2x(code, opts = {}) {
+        return createSource2x(this, code, opts);
     }
 
     /** 形态判定（§4.1）：纯对象=纯声明式 / defineSource=增强 / drpy2 特征=兼容层 */

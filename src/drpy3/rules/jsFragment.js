@@ -5,6 +5,8 @@ import {UA, urlencode, forceOrder, 是否正版, urlDeal} from '../lib/utils.js'
 import {md5, base64Encode, base64Decode, gzip, ungzip, aesX, desX, rc4, rsaX} from '../lib/crypto.js';
 import {cut} from '../lib/text.js';
 
+import {mergeOptions} from '../lib/net.js';
+
 const ASYNC_FN = Object.getPrototypeOf(async function () {
 }).constructor;
 
@@ -34,7 +36,24 @@ export function mapSetResult(d) {
  * @param ctx 调用上下文
  * @param extra 环节专属变量（KEY/TYPE/MY_PAGE/MY_FL/detailUrl/play_url/desc/flag...）
  */
+/** 同步网络桥（load2x 片段用）：drpy2 契约 request() 同步返回文本；宿主注入 syncReq 实现（§5.4 档 C） */
+function makeSyncNet(rt, ctx) {
+    return (u, o, method) => {
+        const syncReq = rt.resolve('syncReq');
+        if (typeof syncReq !== 'function') {
+            throw new Error('load2x 片段需要 HostEnv 注入 syncReq(url, options)——同步 HTTP 桥（§5.4 档 C 契约）');
+        }
+        const merged = mergeOptions(ctx, u, {...(o || {}), ...(method ? {method} : {})});
+        const res = syncReq(u, merged);
+        if (o && o.withHeaders) {
+            return JSON.stringify({...((res && res.headers) || {}), body: (res && res.content) || ''});
+        }
+        return (res && res.content) || '';
+    };
+}
+
 export function buildFragmentScope(ctx, extra = {}) {
+    const syncCall = ctx.__sync ? makeSyncNet(ctx.__rt, ctx) : null;
     const scope = {
         // ═══ 调用态回显（drpy2 全局名）═══
         input: ctx.input !== undefined ? ctx.input : (ctx.url || ''),
@@ -46,27 +65,27 @@ export function buildFragmentScope(ctx, extra = {}) {
         MY_PAGE: ctx.pg || 1,
         MY_FL: ctx.fl || {},
         fetch_params: ctx.fetchParams,
-        // ═══ net（老名 request/fetch/post/batchFetch）═══
-        request: (u, o) => ctx.lib.net.request(u, o),
-        fetch: (u, o) => ctx.lib.net.request(u, o),
-        post: (u, o) => ctx.lib.net.post(u, o),
+        // ═══ net（老名 request/fetch/post/batchFetch；load2x 片段走同步桥，drpy2 同步语义）═══
+        request: (u, o) => (syncCall ? syncCall(u, o, 'GET') : ctx.lib.net.request(u, o)),
+        fetch: (u, o) => (syncCall ? syncCall(u, o, 'GET') : ctx.lib.net.request(u, o)),
+        post: (u, o) => (syncCall ? syncCall(u, o, 'POST') : ctx.lib.net.post(u, o)),
         reqCookie: (u, o, a) => ctx.lib.net.reqCookie(u, o, a),
         batchFetch: (items) => ctx.lib.net.batchFetch(items),
         // ═══ parse（pdf 三件套 + jsp/jq 句柄 + pdfl）═══
         pdfh: (h, p, b) => ctx.lib.parse.pdfh(h, p, b),
         pdfa: (h, p) => ctx.lib.parse.pdfa(h, p),
-        pd: (h, p, b) => ctx.lib.parse.pd(h, p, b),
-        pdfl: (h, p, lt, lu, mu) => ctx.lib.parse.pdfl(h, p, lt, lu, mu),
+        pd: (h, p, b) => ctx.lib.parse.pd(h, p, b || ctx.url), // drpy2 pd2 语义：缺省 base 回退 MY_URL
+        pdfl: (h, p, lt, lu, mu) => ctx.lib.parse.pdfl(h, p, lt, lu, mu || ctx.url),
         jsp: {
             pdfh: (h, p, b) => ctx.lib.parse.pdfh(h, p, b),
             pdfa: (h, p) => ctx.lib.parse.pdfa(h, p),
-            pd: (h, p, b) => ctx.lib.parse.pd(h, p, b),
+            pd: (h, p, b) => ctx.lib.parse.pd(h, p, b || ctx.url),
             jj: (p, j) => ctx.lib.parse.jp(p, j),
         },
         jq: {
             pdfh: (h, p, b) => ctx.lib.parse.pdfh(h, p, b),
             pdfa: (h, p) => ctx.lib.parse.pdfa(h, p),
-            pd: (h, p, b) => ctx.lib.parse.pd(h, p, b),
+            pd: (h, p, b) => ctx.lib.parse.pd(h, p, b || ctx.url),
         },
         jinja2: (t, o) => ctx.lib.parse.jinja2(t, o),
         jp: (p, j) => ctx.lib.parse.jp(p, j),

@@ -7,7 +7,7 @@ const PORT = Number(process.env.MOCK_PORT || 19777);
 
 // 百忙无果 detail 页 HTML：选择器形状与演示稿一致（.vt-txt / p:eq(n) / .video-img / .desc）
 const DETAIL_HTML = `<!doctype html><html><head><title>详情页</title></head><body>
-<div class="m-details"><h1>测试影片</h1><p>类型：国产动漫</p><p>地区：中国大陆</p><p>上映：2023-01-01</p><p>导演：测试导演</p><p>主演：张三 李四 王五</p><p>播出时间：2023-01-01</p></div>
+<div class="m-details"><h1>测试影片</h1><p>类型：国产动漫</p><p>地区：中国大陆</p><p>上映：2023-01-01</p><p>导演：测试导演</p><p>主演：张三 李四 王五</p></div>
 <div class="video-img"><img src="//img.example.com/pic.jpg"></div>
 <div class="desc">简介：这是一个用于冒烟测试的影片简介。</div>
 <div class="vt-txt">测试影片全名</div>

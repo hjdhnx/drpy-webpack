@@ -57,6 +57,8 @@ export function buildCtx(instance, call = {}) {
         store: instance.store,
         cache: instance.cache,
         capabilities: rt.capabilities,
+        __sync: !!instance.is2x, // load2x 片段作用域开关：request 走同步桥（drpy2 同步语义）
+        __rt: rt,                // 片段同步桥需要 rt 解析 syncReq
     };
     ctx.lib = {
         net: makeNet(rt, ctx),                     // net 绑定调用态（headers 合并需要 ctx）
