@@ -141,3 +141,7 @@ vite.config.ts.timestamp-*
 
 # drpy3 文档本地冒烟脚手架（含 dist 拷贝，不入库）
 .smoke/
+
+# drpy3 模式A staging 残留
+.__drpy3_*
+node_modules/drpy3/
