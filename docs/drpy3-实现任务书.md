@@ -18,6 +18,15 @@
 1. 设计冲突时以设计文档为准；要改设计先改文档再改码（附录 A 记录了已否决策，禁止重提）。
 2. 每个工作包（W）先写验收测试再实现；完成一个提交一个（commit 前缀 `drpy3(W#):`）。
 3. 进度表（§4）用 ✅/🚧/⬜ 维护——它是跨会话的唯一进度真相源。
+4. **drpy3-core 禁止任何平台专属导入**（`node:`、Deno/浏览器专属 API 等）——W0-W10 的验收虽
+   在 Node 上跑，但产物必须宿主无关；CI 以 `esbuild --platform=neutral` 打包通过为准
+   （凡 import 了 node: 内建即打包报错）。Node 仅是 HostEnv 的第一个实现，属于 W11。
+
+**产物边界（先做什么后做什么）**：**W0-W10 = drpy3.js 本体**（宿主无关纯 JS ESM 库；开发验证
+在 Node 上进行，但产物不含 Node 依赖）；**W11-W14 = 各运行时的 HostEnv 皮肤**（Node/QuickJS
+同步桥/fjs/QuickJS Android 2026），同一份 drpy3.js 换注入即可，互不阻塞、可并行。
+最终产物清单：`dist/drpy3.esm.min.js`（主产物，peer 引用 dist/drpy-core-lite.min.js 拿库全局）、
+`dist/drpy3.iife.min.js`（无模块能力引擎直接 eval）、`types/drpy3.d.ts`、`cli/`+`fixtures/`。
 
 ---
 
