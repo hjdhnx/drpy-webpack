@@ -2,7 +2,7 @@
 // 能力查找顺序：source 自带(预留，W8 接入) > rt.use 覆盖 > 构造注入 > 框架内置兜底（§7.2）
 import {memoryStore} from './lib/store.js';
 import {builtinJoinUrl} from './lib/utils.js';
-import {detectForm, createSource} from './lifecycle.js';
+import {detectForm, createSource, LifecycleManager, hashStr} from './lifecycle.js';
 import {evalSourceNeutral} from './modules/loader.js';
 import {Drpy3Error} from './errors.js';
 
@@ -44,17 +44,25 @@ export class Runtime {
         this.#memStore = memoryStore();
         this.pinList = hostEnv.pinList || [];  // 壳子钉住的高频源（§4.6）
         this.defaults = null;                  // 声明式默认实现（规则引擎，W6 注入）
+        this.lifecycle = new LifecycleManager(this, hostEnv.lifecycle || {}); // 实例生命周期治理（§4.6）
         this.check();
+    }
+
+    /** 自动治理入口（壳子可定期调用/测试直调）：LRU+水位+maxHot 驱逐 */
+    sweep(opts) {
+        return this.lifecycle.sweep(opts);
     }
 
     /** 源装载（附录 D 阶段1）：对象直接建实例；字符串源码走模块求值（W6/W8 loader） */
     async load(sourceLike, opts = {}) {
         let def = sourceLike;
-        if (typeof sourceLike === 'string') {
-            def = await this.evaluateSource(sourceLike, opts);
+        const code = typeof sourceLike === 'string' ? sourceLike : null;
+        if (code !== null) {
+            def = await this.evaluateSource(code, opts);
         }
         const src = createSource(this, def, opts);
-        if (this.lifecycle) this.lifecycle.register(src);
+        if (code !== null && !src.signature) src.signature = hashStr(code); // 内容指纹基线（惰性热更）
+        this.lifecycle.register(src);
         return src;
     }
 
