@@ -8,13 +8,16 @@ import path from 'node:path';
 import http from 'node:http';
 import https from 'node:https';
 import {execFileSync} from 'node:child_process';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL, fileURLToPath} from 'node:url';
 
 // pdf 三件套实现位置：默认 drpy-node 生产实现（DRPY_HTML_PARSER 环境变量可覆盖）
 const PARSER_URL = process.env.DRPY_HTML_PARSER
     ? pathToFileURL(process.env.DRPY_HTML_PARSER).href
     : 'file:///E:/gitwork/drpy-node/libs_drpy/htmlParser.js';
 const {jsoup} = await import(PARSER_URL);
+
+const HERE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const CORE_INDEX_URL = pathToFileURL(path.resolve(HERE_DIR, '..', 'src', 'drpy3', 'index.js')).href;
 
 const BINARY_EXT = new Set(['.wasm', '.ts', '.mp4', '.m4s', '.jpg', '.png', '.gif', '.webp']);
 
@@ -182,13 +185,17 @@ export function makeNodeHost(opts = {}) {
         pdfl: (html, parse, list_text, list_url, my_url) => new jsoup(my_url || '').pdfl(html, parse, list_text, list_url, my_url),
 
         // ═══ 随源资产（wasm 等）：相对源目录读文件；二进制扩展名按字节读 ═══
-        loadAsset: async (p) => {
+        // 同步返回（fs）：模式 C 的 require 语义要求同步读；wasm.load 等 await 处同样兼容
+        loadAsset: (p) => {
             const abs = path.isAbsolute(p) ? p : path.join(sourceDir, p);
             if (BINARY_EXT.has(path.extname(abs).toLowerCase())) {
                 return new Uint8Array(fs.readFileSync(abs));
             }
             return fs.readFileSync(abs, 'utf8');
         },
+
+        // ═══ 模式 A：原生 ESM 模块装载（nativeEsm:false 关闭，用于模式 B 纯净装载）═══
+        evalModule: opts.nativeEsm === false ? undefined : (code, srcPath) => evalModuleNative(code, srcPath, sourceDir),
 
         // ═══ 持久介质：内存兜底（壳子可换成文件/数据库）═══
         store: opts.store || undefined,
@@ -202,4 +209,50 @@ export function makeNodeHost(opts = {}) {
 /** 文本读取（测试/CLI 用） */
 export function readSourceFile(p) {
     return fs.readFileSync(p, 'utf8');
+}
+
+// ═══════════════ 模式 A：原生 ESM 模块装载（§8.2，Node staging 实现）═══════════════
+// 引擎原生 import：入口写到源目录（相对 import './lib/*' 原样可解析），bare 'drpy3' 经
+// 源目录 node_modules 别名指回 drpy3-core 本体；'?bytes' 资产导入改写到生成的资产模块。
+import crypto from 'node:crypto';
+
+
+function hash8(s) {
+    return crypto.createHash('sha1').update(s).digest('hex').slice(0, 8);
+}
+
+/** 模式 A 装载：返回源模块的 namespace（runtime 取 .default） */
+export async function evalModuleNative(code, srcPath, sourceDir) {
+    const base = (srcPath && !path.isAbsolute(srcPath)) ? path.join(sourceDir, srcPath) : (srcPath || path.join(sourceDir, 'source.js'));
+    const dir = path.dirname(base);
+    const h = hash8(String(code));
+
+    // 1) drpy3 别名（node_modules 就近解析）
+    const nmDir = path.join(dir, 'node_modules', 'drpy3');
+    fs.mkdirSync(nmDir, {recursive: true});
+    fs.writeFileSync(path.join(nmDir, 'package.json'), JSON.stringify({name: 'drpy3', type: 'module', main: 'index.js'}));
+    fs.writeFileSync(path.join(nmDir, 'index.js'), `export * from ${JSON.stringify(CORE_INDEX_URL)};\n`);
+
+    // 2) '?bytes' 资产导入改写 + 资产模块生成
+    let out = String(code);
+    const bytesImports = [...out.matchAll(/^[ \t]*import\s+([A-Za-z_$][\w$]*)\s+from\s*['"](\.[^'"]*\?bytes)['"][ \t]*;?[ \t]*$/gm)];
+    if (bytesImports.length) {
+        const assetsName = `.__drpy3_assets_${h}.mjs`;
+        const lines = ["import {readFileSync} from 'node:fs';"];
+        const named = [];
+        bytesImports.forEach((m, i) => {
+            const local = m[1];
+            const spec = m[2].replace(/\?bytes$/, '');
+            const fileUrl = pathToFileURL(path.resolve(dir, spec)).href;
+            lines.push(`export const __asset_${i} = new Uint8Array(readFileSync(new URL(${JSON.stringify(fileUrl)})));`);
+            named.push(`__asset_${i} as ${local}`);
+            out = out.replace(m[0], `import {${named[i]}} from './${assetsName}';`);
+        });
+        fs.writeFileSync(path.join(dir, assetsName), lines.join('\n') + '\n');
+    }
+
+    // 3) 写入口 → 原生动态 import
+    const entry = path.join(dir, `.__drpy3_entry_${h}.mjs`);
+    fs.writeFileSync(entry, out);
+    return await import(pathToFileURL(entry).href);
 }

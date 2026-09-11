@@ -4,7 +4,7 @@ import {memoryStore} from './lib/store.js';
 import {builtinJoinUrl} from './lib/utils.js';
 import {detectForm, createSource, LifecycleManager, hashStr} from './lifecycle.js';
 import {createSource2x, looksLikeDrpy2} from './compat/drpy2.js';
-import {evalSourceNeutral} from './modules/loader.js';
+import {evalSourceNeutral, evalSourceCjs} from './modules/loader.js';
 import {defaults as declarativeDefaults} from './rules/defaults.js';
 import {Drpy3Error} from './errors.js';
 
@@ -72,8 +72,11 @@ export class Runtime {
         return src;
     }
 
-    /** 源码字符串求值（ESM 形态）：宿主可注入 evalModule（模式 A）；默认仅支持零依赖形态（W6/W8） */
+    /** 源码字符串求值：opts.mode==='cjs' → 内置 CJS shim（模式 C）；宿主 evalModule（模式 A）；默认中性形态 */
     async evaluateSource(code, opts = {}) {
+        if (opts.mode === 'cjs') {
+            return await evalSourceCjs(code, opts, this);
+        }
         if (typeof this.hostEnv.evalModule === 'function') {
             const mod = await this.hostEnv.evalModule(code, opts.path || '');
             return mod && mod.default !== undefined ? mod.default : mod;

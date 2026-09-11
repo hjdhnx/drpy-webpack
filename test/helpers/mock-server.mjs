@@ -22,7 +22,7 @@ seg0.ts
 #EXTINF:10.0,
 https://cdn.example.com/abs/seg1.ts
 #EXTINF:10.0,
-/sub/seg2.ts
+sub/seg2.m3u8
 #EXT-X-ENDLIST`;
 
 // 构造一个最小 TS 分片：N 个 188 字节包，0x47 同步字节 + 视频 PID 4097 交替
@@ -85,7 +85,7 @@ http.createServer((req, res) => {
         }] : [];
         reply({response: {docs}});
     } else if (p.startsWith('/episodesList')) {                // 央视频二级：选集
-        const list = [1, 2].map((i) => ({url: `https://tv.cctv.com/2023/0${i}/ep${i}.m3u8`}));
+        const list = [1, 2].map((i) => ({url: `http://127.0.0.1:${PORT}/hls/ep${i}.m3u8`}));
         reply({list});
     } else if (p.startsWith('/api/getHttpVideoInfo.do')) {     // 央视频 play：取 hls 地址
         reply({
