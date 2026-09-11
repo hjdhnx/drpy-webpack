@@ -2,6 +2,9 @@
 // 能力查找顺序：source 自带(预留，W8 接入) > rt.use 覆盖 > 构造注入 > 框架内置兜底（§7.2）
 import {memoryStore} from './lib/store.js';
 import {builtinJoinUrl} from './lib/utils.js';
+import {detectForm, createSource} from './lifecycle.js';
+import {evalSourceNeutral} from './modules/loader.js';
+import {Drpy3Error} from './errors.js';
 
 // 框架有内置兜底的 HostEnv 字段（缺注入不致命，走兜底并在 capabilities 标注）
 const BUILTIN_FALLBACK = new Set(['batchFetch', 'pdfl', 'joinUrl', 'store', 'log', 'getProxy', 'loadAsset']);
@@ -39,6 +42,34 @@ export class Runtime {
         this.hostEnv = hostEnv;
         this.hostEnv.env = hostEnv.env || {};
         this.#memStore = memoryStore();
+        this.pinList = hostEnv.pinList || [];  // 壳子钉住的高频源（§4.6）
+        this.defaults = null;                  // 声明式默认实现（规则引擎，W6 注入）
+        this.check();
+    }
+
+    /** 源装载（附录 D 阶段1）：对象直接建实例；字符串源码走模块求值（W6/W8 loader） */
+    async load(sourceLike, opts = {}) {
+        let def = sourceLike;
+        if (typeof sourceLike === 'string') {
+            def = await this.evaluateSource(sourceLike, opts);
+        }
+        const src = createSource(this, def, opts);
+        if (this.lifecycle) this.lifecycle.register(src);
+        return src;
+    }
+
+    /** 源码字符串求值（ESM 形态）：宿主可注入 evalModule（模式 A）；默认仅支持零依赖形态（W6/W8） */
+    async evaluateSource(code, opts = {}) {
+        if (typeof this.hostEnv.evalModule === 'function') {
+            const mod = await this.hostEnv.evalModule(code, opts.path || '');
+            return mod && mod.default !== undefined ? mod.default : mod;
+        }
+        return await evalSourceNeutral(code, opts);
+    }
+
+    /** 形态判定（§4.1）：纯对象=纯声明式 / defineSource=增强 / drpy2 特征=兼容层 */
+    _detectForm(def) {
+        return detectForm(def);
     }
 
     /** 运行时覆盖单项或整包（§7.2）：rt.use({pdfh: myFasterPdfh}) */
