@@ -178,6 +178,17 @@ fjs 对接要点（已核实其 Cargo.toml 与 README）：
 > 供声明式 defaults 还原。live 模式六环节实测：真网分类 80 条 → detail 101 集真实选集 → play
 > 真实链接全 PASS（search 因真站 v2 接口加验为 0 条，属站点层漂移，CLI 以 search/category 兜底）。
 
+> **央视频真实源移植（2026-09-12）**：`docs/央视频-dr3.js` 为 `docs/央视频.js`（drpyS 原版 1099 行）
+> 的忠实 dr3 移植——同端点同参数同 guid 格式（栏目表预取/直播频道/栏目大全/点播专辑/搜索/播放
+> 质量线/proxy TS 解密 + m3u8 重写全量保留），静态配置经 test/helpers/extract-cntv-config.mjs
+> 程序化提取（零手抄）。live 实测：init 栏目表 4 页真实数据 / 分类 30 条真实专辑 / detail 30 集 /
+> play 真实 cntv CDN 地址 / proxy m3u8 重写 553 行全通；TS wasm 解密代码路径已触达，但真实胶水为
+> pthread/worker 构建，纯 Node 垫片下初始化会等待（原版同样需真壳环境），留待 W13/W14 原生宿主。
+> wasm.load 增强：识别脚本形态胶水（挂 globalThis 的工厂）、native-globals 补 Uint8Array.fromBase64
+> 垫片（新版 emscripten 解码内嵌 wasm 依赖）、同步就绪快路径与非标准 then 适配。
+> 注意：`docs/央视频-1/2.js` 为设计阶段演示稿（解密与取参有省略），不能当真源用——真源以
+> 央视频-dr3.js 为准。
+
 ---
 
 ## 5. 新会话工作法（给 agent 的纪律）
