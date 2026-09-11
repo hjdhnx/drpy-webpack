@@ -127,8 +127,9 @@ async function inspectSource(relFile) {
         return;
     }
     if (!vod) throw new Error('detail 未返回 vod');
-    line(`← vod 字段：${fmt({...vod, vod_play_url: undefined})}`);
-    const eps = String(vod.vod_play_url || '').split('#');
+    const {vod_play_url, ...vodFields} = vod; // vod_play_url 单独展示（选集行）
+    line(`← vod 字段：${fmt(vodFields)}`);
+    const eps = String(vod_play_url || '').split('#');
     line(`← 选集共 ${eps.length} 条，前 2 条：${fmt(eps.slice(0, 2))}`);
     playFrom = vod.vod_play_from || '';
     playUrl = eps[0]?.split('$').slice(1).join('$') || '';

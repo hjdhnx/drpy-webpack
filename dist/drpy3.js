@@ -247,9 +247,15 @@ function guessHint(msg) {
 function hasHeader(headers, name) {
   return Object.keys(headers || {}).some((k) => k.toLowerCase() === name.toLowerCase());
 }
+function resolveUaNames(headers) {
+  for (const k of Object.keys(headers)) {
+    if (k.toLowerCase() === "user-agent" && UA[headers[k]] !== void 0) headers[k] = UA[headers[k]];
+  }
+  return headers;
+}
 function mergeOptions(ctx2, url2, options) {
   const o = { ...options || {} };
-  const h = { ...ctx2.headers || {}, ...ctx2.fetchParams && ctx2.fetchParams.headers || {}, ...o.headers || {} };
+  const h = resolveUaNames({ ...ctx2.headers || {}, ...ctx2.fetchParams && ctx2.fetchParams.headers || {}, ...o.headers || {} });
   if (!hasHeader(h, "user-agent")) h["User-Agent"] = UA.MOBILE_UA;
   if (!hasHeader(h, "referer")) h["Referer"] = getHome(url2);
   o.headers = h;

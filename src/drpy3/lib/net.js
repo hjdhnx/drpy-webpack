@@ -8,10 +8,20 @@ function hasHeader(headers, name) {
     return Object.keys(headers || {}).some((k) => k.toLowerCase() === name.toLowerCase());
 }
 
+/** UA 常量名解析：header 值恰为常量名（'MOBILE_UA'/'PC_UA'…）时替换为真实 UA（drpy2 init 同机制，
+ *  但 drpy2 只解析 rule.headers；这里在每次请求合并时解析，覆盖钩子运行时赋值的场景，如
+ *  fetch_params.headers['User-Agent'] = 'MOBILE_UA'） */
+function resolveUaNames(headers) {
+    for (const k of Object.keys(headers)) {
+        if (k.toLowerCase() === 'user-agent' && UA[headers[k]] !== undefined) headers[k] = UA[headers[k]];
+    }
+    return headers;
+}
+
 /** 组装本次请求 options：合并三层 headers + 默认 UA/Referer + 超时（drpy2 request 语义） */
 export function mergeOptions(ctx, url, options) {
     const o = {...(options || {})};
-    const h = {...(ctx.headers || {}), ...(ctx.fetchParams && ctx.fetchParams.headers || {}), ...(o.headers || {})};
+    const h = resolveUaNames({...(ctx.headers || {}), ...(ctx.fetchParams && ctx.fetchParams.headers || {}), ...(o.headers || {})});
     if (!hasHeader(h, 'user-agent')) h['User-Agent'] = UA.MOBILE_UA;
     if (!hasHeader(h, 'referer')) h['Referer'] = getHome(url);
     o.headers = h;
