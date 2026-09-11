@@ -89,7 +89,8 @@ export default {
     // 一级：片库 API（栏目/直播分支同理，此处展示最常规路径）
     async category(ctx, tid, pg, extend) {
         extend = extend || {};
-        const res = await ctx.lib.net.req(
+        const { req } = ctx.lib.net;                        // 解构惯用法（§4.5）：之后与 drpy2 写法一致
+        const res = await req(
             `https://api.cntv.cn/List/getVideoAlbumList?channelid=CHAL1460955853485115&serviceId=tvcctv&fc=${tid}&n=30&topv=1&p=${pg}&sort=desc&year=${extend.year || ''}`,
             { headers: H },
         );
@@ -105,7 +106,8 @@ export default {
     // 二级：guid 反解 → 选集接口 → 线路列表
     async detail(ctx, id) {
         const [year, title, vid, img] = id.split('###');
-        const res = await ctx.lib.net.req(
+        const { req } = ctx.lib.net;
+        const res = await req(
             `https://pcweb.api.cntv.cn/episodesList?vid=${vid}&serviceId=tvcctv`,
             { headers: H },
         );
@@ -123,38 +125,42 @@ export default {
 
     // 播放：高清 2000 流走本地代理（wasm 解密），850/450 普通流直连
     async play(ctx, flag, id) {
+        const { req } = ctx.lib.net;
+        const proxyBase = await ctx.getProxyUrl();          // ctx 顶层快捷别名（§4.5）
         const urls = [];
         if (flag === '直播') {
             const [channelId, quality] = id.split('+');
-            urls.push('2000Proxy', ctx.lib.utils.getProxyUrl() + '&url=' + encodeURIComponent(getLiveUrl(channelId, quality || 'td')) + '&_type=m3u8');
+            urls.push('2000Proxy', proxyBase + '&url=' + encodeURIComponent(getLiveUrl(channelId, quality || 'td')) + '&_type=m3u8');
         } else {
             const vid = id.split('+')[0];
-            const res = await ctx.lib.net.req(`https://vdn.apps.cntv.cn/api/getHttpVideoInfo.do?pid=${vid}`, { headers: H });
+            const res = await req(`https://vdn.apps.cntv.cn/api/getHttpVideoInfo.do?pid=${vid}`, { headers: H });
             const data = JSON.parse(res.content);
             const hlsUrl = data.hls_url.split('?')[0];
             const hdUrl = data.manifest.hls_h5e_url.split('?')[0].replace(/\/main([\/.])/g, '/2000$1');
-            urls.push('2000Proxy', ctx.lib.utils.getProxyUrl() + '&url=' + encodeURIComponent(hdUrl) + '&_type=m3u8');
+            urls.push('2000Proxy', proxyBase + '&url=' + encodeURIComponent(hdUrl) + '&_type=m3u8');
             for (const name of ['850', '450']) urls.push(name, hlsUrl.replace(/\/main([\/.])/g, '/' + name + '$1'));
         }
         return { parse: 0, urls, header: { 'user-agent': 'Dalvik/2.1.0 (Linux; U; Android 7.0)' } };
     },
 
-    // 本地代理：m3u8 重写 + TS 分片 wasm 解密（二进制返回契约）
+    // 本地代理：m3u8 重写 + TS 分片 wasm 解密（五元组契约，toBytes=1 见 §10.1）
     async proxy(ctx, params) {
+        const { req } = ctx.lib.net;
         const HH = { 'User-Agent': H['user-agent'], Referer: WEB };
         if ((params.url || '').includes('.ts')) {
-            const ts = (await ctx.lib.net.req(params.url, { buffer: 1, timeout: 15000, headers: HH })).content;
+            const ts = (await req(params.url, { buffer: 1, timeout: 15000, headers: HH })).content;
             const out = await decryptTs(ctx, ts);                          // ← wasm 解密
             return [200, 'video/MP2T', Buffer.from(out).toString('base64'), { 'Content-Type': 'video/MP2T' }, 1];
         }
         // m3u8：分片地址改写回代理地址（相对路径基于当前 m3u8 补全）
-        const res = await ctx.lib.net.req(params.url, { headers: HH });
+        const res = await req(params.url, { headers: HH });
         const base = params.url.slice(0, params.url.lastIndexOf('/') + 1);
+        const proxyBase = await ctx.getProxyUrl();
         const proxied = res.content.split('\n').map(line => {
             const t = line.trim();
             if (!t || t.startsWith('#')) return line;
             const abs = /^http/.test(t) ? t : base + t;
-            return ctx.lib.utils.getProxyUrl() + '&url=' + encodeURIComponent(abs) + (t.includes('.m3u8') ? '&_type=m3u8' : '');
+            return proxyBase + '&url=' + encodeURIComponent(abs) + (t.includes('.m3u8') ? '&_type=m3u8' : '');
         });
         return [200, 'application/vnd.apple.mpegurl', proxied.join('\n')];
     },

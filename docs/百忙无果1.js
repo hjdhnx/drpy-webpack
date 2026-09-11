@@ -35,7 +35,8 @@ export default {
 
     // 搜索：contents[] 混着非 media 项、取 data[0]、title 去 <B>、url/rpt 正则提取
     async search(ctx, wd, quick, pg) {
-        const res = await ctx.lib.net.request(
+        const { request } = ctx.lib.net;                    // 解构惯用法（§4.5）：之后与 drpy2 写法一致
+        const res = await request(
             ctx.rule.searchUrl.replaceAll('**', wd).replaceAll('fypage', pg),
             { headers: { 'User-Agent': 'MOBILE_UA', Referer: 'https://www.mgtv.com' } },
         );

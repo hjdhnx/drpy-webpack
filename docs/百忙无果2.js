@@ -42,8 +42,15 @@ export default defineSource({
     // 初始化：换源参数、预热、记录
     async init(ctx, ext) {
         if (ext) ctx.rule.params = ext;
+        // 有状态源示例（§4.4/§4.6）：需要 cookie 的源在这里预处理——
+        // if (!ctx.resumed) {                                     // 复温时 headers 已快照回填，免重登
+        //     const res = await ctx.req(loginUrl);
+        //     ctx.headers.Cookie = parseCookie(res.headers);      // 实例基线：后续所有请求自动携带
+        // }
+        // await ctx.store.set('cookie', ctx.headers.Cookie);      // 可选：持久化，跨重启免重登
         await ctx.lib.crypto.ready();                 // wasm 就绪（原生 wasm 引擎上近乎零成本）
         await ctx.store.set('lastInit', String(Date.now()));
+        this.initedAt = Date.now();                   // 实例自定义字段：有状态源的归宿（§4.4），跨调用可读
         ctx.log(`init ok: ${ctx.key}`);
     },
 

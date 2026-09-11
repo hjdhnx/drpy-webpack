@@ -67,13 +67,13 @@ export default defineSource({
         filter: { tv: { 年份: [{ n: '全部', v: '' }] }, zy: { 年份: [{ n: '全部', v: '' }] } },
     },
 
-    // 初始化：wasm 预热 + 能力自检 + 栏目表预热进缓存
+    // 初始化：轻量化（§4.6 生命周期友好）——只做鉴权级必做事，重预取一律 lazy + cache
+    // （栏目表不在这里预取：category 的栏目分支自带 cache，首次浏览时才拉取，复温成本最低）
     async init(ctx, ext) {
         if (ext) ctx.rule.params = ext;
         const cap = ctx.capabilities || {};                                 // 能力表：wasm 档位/action 通道等
         ctx.log(`wasm: ${cap.wasm}, action: ${cap.action}`);                // native | polyfill | none
-        await ctx.lib.wasm.load(WASM_PATH);                                 // 预热：此后每次调用零初始化成本
-        await this.category(ctx, 'column', 1, {});                          // 顺带把栏目表灌进缓存（this 绑定见 §4.3）
+        await ctx.lib.wasm.load(WASM_PATH);                                 // 预热：wasm 缓存是 Runtime 级的，跨实例驱逐存活
         await ctx.store.set('lastInit', String(Date.now()));
     },
 
