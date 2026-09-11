@@ -153,8 +153,12 @@ fjs 对接要点（已核实其 Cargo.toml 与 README）：
 
 > 完成一个 WP：把 ⬜ 改 ✅（部分完成 🚧 并注明余项），随该 WP 的 commit 一起提交。
 
-- W0 ⬜ ｜ W1 ⬜ ｜ W2 ⬜ ｜ W3 ⬜ ｜ W4 ⬜ ｜ W5 ⬜ ｜ W6 ⬜
-- W7 ⬜ ｜ W8 ⬜ ｜ W9 ⬜ ｜ W10 ⬜ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜ ｜ W14 ⬜ ｜ W14 ⬜
+- W0 ✅ ｜ W1 ⬜ ｜ W2 ⬜ ｜ W3 ⬜ ｜ W4 ⬜ ｜ W5 ⬜ ｜ W6 ⬜
+- W7 ⬜ ｜ W8 ⬜ ｜ W9 ⬜ ｜ W10 ⬜ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜ ｜ W14 ⬜
+
+> W0 备注：`src/drpy3/` 骨架 + `test/smoke.test.mjs`（drpy2 附录 C 六环节回归锚，独立进程 mock
+> 复刻自 .smoke/ 并扩展了央视频形状）。本机（Git Bash）`node --test test/` 目录参数有兼容问题，
+> 验证命令用 `node --test test/*.test.mjs`（bash 展开）。
 
 ---
 
