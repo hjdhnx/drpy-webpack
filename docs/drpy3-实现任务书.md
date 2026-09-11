@@ -60,16 +60,59 @@ JSEncrypt/NODERSA/JSON5/jinja 是 drpy2 生态资产，不重造）；drpy3-core
 | QuickJS + python 同步桥（hipy 系） | 档 C（req 同步桥，功能全可用） | 模式 C shim / 预打包 | polywasm | 内存/SQLite | 第 2 个 |
 | quickjs-ng | 档 A/B（job 泵） | 模式 A（JS_SetModuleLoaderFunc） | native | 宿主定 | 可选样例 |
 | Flutter [fjs](https://github.com/fluttercandies/fjs) | **近档 A**：内置 Promise/timer/fetch 驱动（`JsEvalOptions.withPromise` + `drainUnhandledJobErrors`） | 模式 A 变体：`declareNewModule` 逐个注册模块 | **预计 none**（QuickJS 本体无 wasm）：polywasm 兜底，或 §12.1 性能阶梯第三级——Dart/Rust 原生解密经 bridge 注入 | shared_prefs/SQLite | 第 3 个（跨平台终态） |
+| **QuickJS Android 2026**（用户自有 so + C 扩展源码，DsPlayer 系，JNI 暴露 QuickJSContext） | 档 A/B：Promise API 齐全（WebCrypto / fs.promises / WebAssembly.compile 均返回 Promise），timers"若启用事件循环"可用——pump 形态 W14 实测 | ESM + import attributes（引擎自带，待实测） | **native**：C 实现 WebAssembly 全 API（compile/instantiate/Memory/Table/validate） | **DataBase（SQLite）原生** | **R1 路线：Android 全原生能力档（能力对照见 §2.1）** |
 
-fjs 对接要点（基于其 README 核实）：
-- 异步：`JsEvalOptions.withPromise()` 允许顶层 await，内置驱动自动推进 job——drpy3 的
-  ensureHot/钩子 Promise 链原生可用，宿主只需实现 `fetch`/`timers` builtin 或经 bridge 注入 `req`；
-- 注入：`engine.init(bridge:)` 承接 HostEnv 全部函数（JS 侧 `fjs.bridge_call` 进 Dart）——
-  req/pdfh/pdfa/pd/store 全走桥，签名对齐 HostEnv 契约即可，drpy3-core 零改动；
-- 模块：`declareNewModule` 把源文件与 `./lib/*` 依赖逐个注册（把 §8 模式 A 的 loader 语义
-  平移成"宿主预注册"）；
-- wasm：`capabilities.wasm` 按 'none' 报告；央视频解密在 Flutter 上二选一：
-  polywasm（能跑）或经 bridge 注入原生解密（推荐，§12.1 阶梯第三级）。
+fjs 对接要点（已核实其 Cargo.toml 与 README）：
+- **底座**：QuickJS C 源码经 **rquickjs**（DelSkayn/rquickjs @0.12.1 锁 rev 04e2734）编译进 Rust
+  crate `libfjs`；rquickjs 0.9+ 内嵌的是 **quickjs-ng** 分支（非 Bellard 原版仓库直引，与 AWS
+  LLRT 同源——fjs 直接复用了约 30 个 `llrt_*` 模块 crate）。
+- **二进制形态**：libfjs（Rust，tokio full 驱动）→ Cargokit 编译 → Android `.so` /
+  iOS-macOS XCFramework / Windows `.dll` / Linux `.so`，QuickJS C 代码**静态链接**在 Rust
+  动态库里，Dart 经 flutter_rust_bridge(=2.12.0) FFI 调用。
+- **异步**：tokio + rquickjs futures 在 Rust 侧驱动 Promise/job（`JsEvalOptions.withPromise` +
+  `drainUnhandledJobErrors`）——接近档 A；drpy3 的 ensureHot/钩子 Promise 链原生可用。
+- **HostEnv 注入**：`engine.init(bridge:)` 承接全部 HostEnv 函数（JS 侧 `fjs.bridge_call` 进
+  Dart），签名对齐契约即可，drpy3-core 零改动；另可直接用 LLRT 原生模块：`llrt:fetch`
+  （Rust http 实现）、zlib/compression（gzip 原生）、crypto——drpy2 的 gzip/ungzip 在
+  Flutter 上白得原生性能。
+- **模块**：`declareNewModule` 把源文件与 `./lib/*` 依赖逐个预注册（把 §8 模式 A 的 loader
+  语义平移成"宿主预注册"）；支持字节码预编译（版本绑定）→ 预打包源可进一步预编译加速启动。
+- **wasm**：README 未提及（quickjs-ng 分支近年已加 wasm 支持，但 fjs 锁定的 rquickjs rev
+  是否暴露 `WebAssembly` 需实测 `typeof WebAssembly` 后回填 capabilities）；按 'none' 规划：
+  polywasm 兜底，或 §12.1 阶梯第三级——Dart/Rust 原生解密经 bridge 注入（推荐）。
+- **内存治理**：engine 级 memoryLimit/gcThreshold 可配 → §4.6 水位信号有抓手；官方声明
+  "非 hostile-code 沙箱"——与 drpy3"只做状态/故障隔离"立场一致。
+
+### 2.1 专用运行时：QuickJS Android 2026（用户自有 so + C 扩展源码）
+
+文档：`E:\gitwork\DsPlayer\docs\quickjs-android-api-docs.html`（引擎版本 QuickJS 2026-06-04
++ Lexbor C 解析器，JNI 暴露 `QuickJSContext`，面向 Android，源码在手）。
+
+**能力对照（drpy3 需求 → so 原生提供 → capabilities 结果）**：
+
+| drpy3 需求 | so 原生提供 | capabilities |
+|-----------|-------------|--------------|
+| pdfh/pdfa/pd 底座 | **cheerio 全局（Lexbor C 实现）**+ JS 语义包装（drpy-node htmlParser.js 适配） | native（解析快约一个量级） |
+| wasm | **WebAssembly 全 API**（compile/instantiate/Memory/Table/validate，Promise 齐全） | **native**（央视频解密满速，无 polywasm） |
+| store | DataBase（SQLite） | native 持久化 |
+| crypto/gzip | Hash/HMAC + WebCrypto（Promise）+ zlib | native |
+| joinUrl | URL/URLSearchParams | native |
+| console/atob/btoa/TextEncoder/Buffer/performance | 原生注入 | native |
+| 异步 | Promise API 齐全（WebCrypto/fs.promises/wasm.compile）；timers"若启用事件循环" | 档 A/B（pump 形态 W14 实测） |
+
+**三条路线**：
+
+- **R1（最快见效，Android 先行）**：直接对接 so——JNI 桥（Java `QuickJSContext`，或 Dart 侧
+  jni/ffi 包）→ 写 HostEnv 映射层（含 pdfh 语义包装）。drpy3-core 零改动，capabilities 表
+  几乎全绿，央视频全链路（wasm 解密 + C 解析）达到原生性能。
+- **R2（跨平台终态）**：C 扩展源码融入 fjs 的 rquickjs 构建——Lexbor cheerio/zlib/fs/sqlite/
+  atob/performance 等多为独立 C 模块，可直接编译挂为 rquickjs 全局/原生模块；**wasm 是核内
+  补丁**（其 fork 为 Bellard 系日期版本，fjs 内嵌 quickjs-ng），核内补丁跨分支移植 = 深度
+  专项，单列评估（若其 wasm 实为独立 C 库绑定则可直接挂）。
+- **R3（兜底）**：fjs 原生 + polywasm，现在就能写，性能差。
+
+**建议节奏**：R1 验证全链路与真实性能基线 → R3 补非 Android 平台先跑通 → R2 按模块逐步融合
+（每个模块融合后 R1 与 R2 跑同一基准对比）。
 
 ---
 
@@ -91,8 +134,9 @@ fjs 对接要点（基于其 README 核实）：
 | W11 | 运行时对接：Node 完全体（fetch+cheario+fs store，档 A 真并发） | §5.4 | 并发基准：多请求墙钟 ≤ 串行 50% | ⬜ |
 | W12 | 运行时对接：QuickJS 同步桥（档 C；python 或 quickjs 绑定） | §5.4 档C | 百忙无果1 六环节在 QuickJS 内跑通 | ⬜ |
 | W13 | 运行时对接：Flutter fjs（bridge 注入 HostEnv + declareNewModule 模块 + polywasm/原生解密决策） | §5.4/§8/§12.1 | 央视频-1 六环节在 fjs 模拟器跑通；capabilities.wasm 报告正确 | ⬜ |
+| W14 | 运行时对接：QuickJS Android 2026（R1 路线，§2.1）——JNI/FFI 桥 + HostEnv 全原生映射 + pdfh 语义包装 + 事件循环 pump 实测 | §2.1 | 央视频-1 在 Android 真机跑通且 capabilities.wasm='native'；与 fjs+polywasm 跑同一解密基准对比 | ⬜ |
 
-依赖链：W0→W1→W2→W3→(W4,W5)→W6→(W7,W8,W9)→W10→(W11,W12,W13 可并行)。
+依赖链：W0→W1→W2→W3→(W4,W5)→W6→(W7,W8,W9)→W10→(W11,W12,W13,W14 可并行)。
 
 ---
 
@@ -101,7 +145,7 @@ fjs 对接要点（基于其 README 核实）：
 > 完成一个 WP：把 ⬜ 改 ✅（部分完成 🚧 并注明余项），随该 WP 的 commit 一起提交。
 
 - W0 ⬜ ｜ W1 ⬜ ｜ W2 ⬜ ｜ W3 ⬜ ｜ W4 ⬜ ｜ W5 ⬜ ｜ W6 ⬜
-- W7 ⬜ ｜ W8 ⬜ ｜ W9 ⬜ ｜ W10 ⬜ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜
+- W7 ⬜ ｜ W8 ⬜ ｜ W9 ⬜ ｜ W10 ⬜ ｜ W11 ⬜ ｜ W12 ⬜ ｜ W13 ⬜ ｜ W14 ⬜ ｜ W14 ⬜
 
 ---
 
