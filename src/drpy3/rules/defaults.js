@@ -143,7 +143,7 @@ export const defaults = {
     },
 
     /** 二级详情：js: 片段（VOD）/ '*'直连 / 对象形态（title/desc/tabs/lists，drpy2 detailParse 语义）。
-     *  id=壳子已剥「分类$」前缀的 id；fullId=原始全文（用于 vod_id 还原，drpy2 保留原文） */
+     *  id=壳子按透传规则给出的 id（仅 detailUrl 路由源剥「分类$」，其余原样）；fullId=原始全文（vod_id 还原用） */
     async detail(ctx, id, fullId) {
         const rule = ctx.rule;
         const orId = String(id == null ? '' : id);

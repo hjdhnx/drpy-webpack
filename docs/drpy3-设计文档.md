@@ -108,7 +108,7 @@ export default defineSource({
     async init(ctx, ext) { /* 换源/extend 预处理；不写则框架走默认初始化 */ },
     async home(ctx, filter) { /* 不写则走 rule.class_parse 默认解析 */ },
     async category(ctx, tid, pg, extend) { },
-    async detail(ctx, id) { },              // id 已剥「分类$」路由前缀（drpy2 detail 同语义；vod_id 全文需要时经 ctx.input 回显）
+    async detail(ctx, id) { },              // id 透传规则：源声明 rule.detailUrl（声明式路由，分类时引擎加「分类$」）→ 引擎剥除自己加的前缀（drpy2 同语义往返）；否则 vod_id 属于源自有的任意文本（drpyS 式 ### 拼装等），引擎原样透传不加工
     async play(ctx, flag, id) { },
     async search(ctx, wd, quick, pg) { },
     async proxy(ctx, params) { },

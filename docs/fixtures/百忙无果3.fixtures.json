@@ -6,7 +6,7 @@
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:25:44 GMT",
+   "date": "Fri, 11 Sep 2026 20:31:14 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "433"
@@ -14,12 +14,12 @@
  },
  {
   "key": "GET|b0|http://drpy3.mock/msite/search/v3?q=%E6%96%97%E7%BD%97%E5%A4%A7%E9%99%86&pn=1&pc=10&&",
-  "url": "http://drpy3.mock/msite/search/v3?q=%E6%96%97%E7%BD%97%E5%A4%A7%E9%99%86&pn=1&pc=10&ts=1789158344779&sign=-61c8864f",
-  "content": "{\"data\":{\"contents\":[{\"type\":\"media\",\"data\":[{\"desc\":[\"2023\",\"动漫\"],\"source\":\"imgo\",\"img\":\"http://img.example.com/s.jpg\",\"rpt\":\"idx=50&other=1\",\"title\":\"<B>斗罗大陆</B>\",\"url\":\"http://127.0.0.1:20340/b/999/vid9.html\"}]}]}}",
+  "url": "http://drpy3.mock/msite/search/v3?q=%E6%96%97%E7%BD%97%E5%A4%A7%E9%99%86&pn=1&pc=10&ts=1789158674485&sign=-61c8864f",
+  "content": "{\"data\":{\"contents\":[{\"type\":\"media\",\"data\":[{\"desc\":[\"2023\",\"动漫\"],\"source\":\"imgo\",\"img\":\"http://img.example.com/s.jpg\",\"rpt\":\"idx=50&other=1\",\"title\":\"<B>斗罗大陆</B>\",\"url\":\"http://127.0.0.1:20310/b/999/vid9.html\"}]}]}}",
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:25:44 GMT",
+   "date": "Fri, 11 Sep 2026 20:31:14 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "229"
@@ -32,7 +32,7 @@
   "headers": {
    "status": "HTTP/1.1 200",
    "content-type": "application/json; charset=utf-8",
-   "date": "Fri, 11 Sep 2026 20:25:44 GMT",
+   "date": "Fri, 11 Sep 2026 20:31:14 GMT",
    "connection": "keep-alive",
    "keep-alive": "timeout=5",
    "content-length": "276"
@@ -48,18 +48,18 @@
    "content-type": "text/html; charset=utf-8",
    "transfer-encoding": "chunked",
    "connection": "keep-alive",
-   "set-cookie": "_source_=D; Max-Age=31536000; Domain=.mgtv.com; Path=/, xff=223.87.192.61;domain=.mgtv.com;path=/",
-   "date": "Fri, 11 Sep 2026 20:27:39 GMT",
+   "set-cookie": "_source_=D; Max-Age=31536000; Domain=.mgtv.com; Path=/, xff=2409:8c62:e10:9002:3::11;domain=.mgtv.com;path=/",
+   "date": "Fri, 11 Sep 2026 20:33:09 GMT",
    "x-envoy-upstream-service-time": "2",
    "vary": "Accept-Encoding",
+   "via": "cache17.l2cn3163[86,86,400-1280,M], cache24.l2cn3163[87,0], cache7.cn9181[189,189,400-1280,M], cache12.cn9181[191,0]",
+   "ali-swift-global-savetime": "1789158675",
    "x-cache": "MISS TCP_MISS dirn:-2:-2",
-   "x-sqd-err": "orig response 4XX error",
-   "x-sqd-stime": "Fri, 11 Sep 2026 20:25:45 GMT",
-   "x-sqd-ctime": "0",
-   "x-sqd-gstime": "1789158345",
-   "via": "c17.l2cn3163(125,124,400-1280,M), c35.l2cn3163(126,0), c2.cn8261(229,229,400-1280,M), c3.cn8261(267,0)",
+   "x-swift-error": "orig response 4XX error",
+   "x-swift-savetime": "Fri, 11 Sep 2026 20:31:15 GMT",
+   "x-swift-cachetime": "0",
    "timing-allow-origin": "*",
-   "eagleid": "df57c01717891583457488451e"
+   "eagleid": "7013012017891586754565779e"
   }
  },
  {
@@ -73,7 +73,7 @@
    "content-length": "33773",
    "connection": "keep-alive",
    "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding, Accept-Encoding, Accept-Encoding",
-   "set-cookie": "_source_=C; Max-Age=31536000; Domain=.mgtv.com; Path=/, xff=223.87.192.61;domain=.mgtv.com;path=/",
+   "set-cookie": "_source_=C; Max-Age=31536000; Domain=.mgtv.com; Path=/, xff=2409:8c62:e10:9002:3::11;domain=.mgtv.com;path=/",
    "date": "Fri, 11 Sep 2026 16:29:44 GMT",
    "last-modified": "Fri, 11 Sep 2026 16:29:44 GMT",
    "x-render-time": "28 ms",
@@ -81,14 +81,14 @@
    "accept-ranges": "none",
    "expires": "Fri, 11 Sep 2026 21:29:44 GMT",
    "cache-control": "max-age=18000",
-   "age": "14162",
-   "x-cache": "MISS TCP_MISS dirn:-2:-2",
-   "x-sqd-stime": "Fri, 11 Sep 2026 20:25:46 GMT",
-   "x-sqd-ctime": "3838",
-   "x-sqd-gstime": "1789144184",
-   "via": "c32.l2cn3163(0,0,200-0,H), c45.l2cn3163(0,0), c8.cn8261(107,106,200-0,M), c3.cn8261(108,0)",
+   "via": "cache32.l2cn3163[0,0,200-0,H], cache22.l2cn3163[1,0], cache17.cn9181[0,0,200-0,H], cache12.cn9181[2,0]",
+   "age": "14491",
+   "ali-swift-global-savetime": "1789144184",
+   "x-cache": "HIT TCP_HIT dirn:12:138988917",
+   "x-swift-savetime": "Fri, 11 Sep 2026 16:42:00 GMT",
+   "x-swift-cachetime": "17264",
    "timing-allow-origin": "*",
-   "eagleid": "df57c01717891583460308509e"
+   "eagleid": "7013012017891586756615937e"
   }
  }
 ]

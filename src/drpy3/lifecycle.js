@@ -233,10 +233,15 @@ export const sourceProto = {
     },
 
     async detail(id) {
-        // drpy2 detail() 同语义：vod_id 的「分类$」路由前缀由引擎剥除后再进二级
-        // （钩子拿到纯 id；声明式 defaults 用原始全文还原 vod_id）
+        // vod_id 透传规则（对称往返）：
+        // ① 源声明 rule.detailUrl（声明式路由，分类时引擎加「分类$」，附录 C 的 3$vid1 形状）
+        //    → 引擎剥除自己加的前缀再进二级（drpy2 detail() 同语义）；
+        // ② 无 detailUrl（drpyS 式源）→ vod_id 是源自有的任意文本（### 拼装等），原样透传不加工。
+        await this.ensureHot();
         const raw = String(id == null ? '' : id);
-        const hookId = raw.includes('$') ? raw.slice(raw.indexOf('$') + 1) : raw;
+        const hookId = this.rule && this.rule.detailUrl && raw.includes('$')
+            ? raw.slice(raw.indexOf('$') + 1)
+            : raw;
         return this._dispatch('detail', [hookId, raw], {input: raw, url: ''}, 'detail');
     },
 

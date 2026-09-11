@@ -170,11 +170,12 @@ fjs 对接要点（已核实其 Cargo.toml 与 README）：
 > ④ 模式 C 需同步 loadAsset。余项（非阻塞，W11-W14 对接时按需补）：对象形态二级 tabs/lists 完整
 > 语义、fixAdM3u8Ai、getOriginalJs/OcrApi、types/drpy3.d.ts、GBK 搜索编码。
 >
-> **补充契约决策（2026-09-12，live 真网实测驱动）**：`detail` 钩子的 id 由引擎剥除「分类$」路由
-> 前缀后传入（drpy2 `detail()` 同语义，设计文档 §4.1 已注）；三个百忙无果演示稿在该契约下全部
-> 兼容（demo2/3 的 `split('$').pop()` 变为无害空操作）。vod_id 原始全文经第二参供声明式 defaults
-> 还原。live 模式六环节实测：真网分类 80 条 → detail 101 集真实选集 → play 真实链接全 PASS
-> （search 因真站 v2 接口加验为 0 条，属站点层漂移，CLI 以 search/category 兜底 vod_id）。
+> **补充契约决策（2026-09-12，live 真网实测驱动，经项目主修正）**：vod_id 透传规则为**对称往返、
+> 按需剥离**——源声明 `rule.detailUrl`（声明式路由，分类时引擎加「分类$」，附录 C 的 3$vid1 形状）
+> → 引擎剥除自己加的前缀再进二级（drpy2 `detail()` 同语义往返）；源无 detailUrl（drpyS 式，如
+> 央视频的 ### 拼装）→ vod_id 属源自有任意文本，**引擎原样透传不加工**。vod_id 原始全文经第二参
+> 供声明式 defaults 还原。live 模式六环节实测：真网分类 80 条 → detail 101 集真实选集 → play
+> 真实链接全 PASS（search 因真站 v2 接口加验为 0 条，属站点层漂移，CLI 以 search/category 兜底）。
 
 ---
 
