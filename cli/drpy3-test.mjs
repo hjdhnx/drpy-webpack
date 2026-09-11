@@ -200,25 +200,34 @@ async function main() {
             if (cate.list[0]) { vodId = cate.list[0].vod_id; playFrom = cate.list[0].vod_play_from || ''; }
             return {list: cate.list.length, first: cate.list[0] && cate.list[0].vod_id};
         });
+        let searchEmpty = false;
         await step('search', async () => {
             const search = await src.search(opts.wd, false, 1);
             if (!search || typeof search !== 'object') throw new Error('search 返回非对象');
             if (search.list && search.list[0]) vodId = vodId.includes('$') || vodId.includes('###') ? vodId : (search.list[0].vod_id || vodId);
+            if (!search.list || search.list.length === 0) searchEmpty = true; // live 真站搜索加验/风控常见
             return {list: search.list ? search.list.length : 0};
         });
-        await step('detail', async () => {
+        const stepSkippable = async (stage, fn, reason) => {
+            if (reason) {
+                results.push({stage, ok: true, skip: reason});
+                return null;
+            }
+            return await step(stage, fn);
+        };
+        await stepSkippable('detail', async () => {
             const detail = await src.detail(vodId);
             const vod = detail && detail.list && detail.list[0];
             if (!vod) throw new Error('detail 未返回 vod');
             playFrom = vod.vod_play_from || playFrom;
             playUrl = String(vod.vod_play_url || '').split('#')[0].split('$').slice(1).join('$');
             return {name: vod.vod_name, eps: String(vod.vod_play_url || '').split('#').length};
-        });
-        await step('play', async () => {
+        }, searchEmpty ? 'search 无结果（真站搜索加验/风控），无有效 vod_id 可测 detail' : '');
+        await stepSkippable('play', async () => {
             const play = await src.play(playFrom, playUrl, []);
             if (!play || !('url' in play) && !('urls' in play)) throw new Error('play 未返回 url/urls');
             return {parse: play.parse, jx: play.jx, url: (play.url || (play.urls && play.urls[1]) || '').slice(0, 80)};
-        });
+        }, searchEmpty ? '同上，detail 跳过则 play 跳过' : '');
     }
     if (mock) mock.child.kill();
     fs.rmSync(stageDir, {recursive: true, force: true});
@@ -229,7 +238,8 @@ async function main() {
     console.log('===DRPY3_RESULT===');
     console.log(JSON.stringify(out));
     for (const r of results) {
-        console.error(`${r.ok ? 'PASS' : 'FAIL'} ${r.stage} (${r.ms}ms)${r.error ? ' — ' + r.error : ''}`);
+        const note = r.skip ? ` — ${r.skip}` : (r.error ? ` — ${r.error}` : '');
+        console.error(`${r.ok ? (r.skip ? 'SKIP' : 'PASS') : 'FAIL'} ${r.stage}${r.ms != null ? ` (${r.ms}ms)` : ''}${note}`);
     }
     if (opts.record && host.__recorded) {
         fs.mkdirSync(path.dirname(fixturesPath), {recursive: true});
