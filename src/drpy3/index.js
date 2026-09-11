@@ -1,16 +1,11 @@
-// drpy3-core 入口：宿主无关的 ESM 类库（W0 骨架，后续 WP 逐个充实）
+// drpy3-core 入口：宿主无关的 ESM 类库
 // 设计唯一真相源：docs/drpy3-设计文档.md；执行手册：docs/drpy3-实现任务书.md
+import {Runtime} from './runtime.js';
 
-export const VERSION = 'drpy3 0.1.0 W0';
+export {Runtime};
+export const VERSION = 'drpy3 0.1.0';
 
-// W1 起实现：Runtime（HostEnv 校验/use()/capabilities）
-export class Runtime {
-    constructor(hostEnv) {
-        this.hostEnv = hostEnv || {};
-    }
-}
-
-// defineSource 运行时恒等（§4.1）：唯一作用是给 IDE/TS 类型提示
+// defineSource 运行时恒等（§4.1）：唯一作用是给 IDE/TS 提供类型提示——用不用都不影响行为
 export function defineSource(source) {
     return source;
 }
