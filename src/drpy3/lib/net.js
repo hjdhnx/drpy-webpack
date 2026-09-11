@@ -62,7 +62,7 @@ export function makeNet(rt, ctx) {
         /** 正式并发批量 API（§9）：[{url, options}] → 按序对齐的响应"文本"数组；单项失败返 '' 不中断 */
         async batchFetch(items) {
             const hostFn = rt.resolve('batchFetch');
-            if (typeof hostFn === 'function' && rt.capabilities.batchFetch === 'host') {
+            if (typeof hostFn === 'function') {
                 return await hostFn(items);
             }
             // 框架内置兜底：req + Promise.all（§7 附录 A：宿主原生实现可随时覆盖拿更快路径）
