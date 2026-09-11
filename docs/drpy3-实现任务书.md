@@ -25,8 +25,9 @@
 **产物边界（先做什么后做什么）**：**W0-W10 = drpy3.js 本体**（宿主无关纯 JS ESM 库；开发验证
 在 Node 上进行，但产物不含 Node 依赖）；**W11-W14 = 各运行时的 HostEnv 皮肤**（Node/QuickJS
 同步桥/fjs/QuickJS Android 2026），同一份 drpy3.js 换注入即可，互不阻塞、可并行。
-最终产物清单：`dist/drpy3.esm.min.js`（主产物，peer 引用 dist/drpy-core-lite.min.js 拿库全局）、
-`dist/drpy3.iife.min.js`（无模块能力引擎直接 eval）、`types/drpy3.d.ts`、`cli/`+`fixtures/`。
+最终产物清单：`dist/drpy3.js`（可读可维护单文件，drpy2.js 同款双文件用法）、`dist/drpy3.esm.min.js`
+（压缩单文件；两者均 peer 引用 dist/drpy-core-lite.min.js 拿库全局，`npm run build:drpy3` 产出）、
+`dist/drpy3.iife.min.js`（无模块能力引擎直接 eval，未做）、`types/drpy3.d.ts`（未做）、`cli/`+`fixtures/`。
 
 ---
 
