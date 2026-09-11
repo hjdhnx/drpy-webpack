@@ -79,6 +79,8 @@ async function compileWasmBytes(bytes) {
 async function loadEmscriptenGlue(code, key) {
     const shim = makeShim();
     const module_ = {exports: {}};
+    const globalSnap = new Set(Object.getOwnPropertyNames(globalThis)
+        .filter((k) => typeof globalThis[k] === 'function'));
     let factory;
     try {
         const fn = new Function(
@@ -93,7 +95,15 @@ async function loadEmscriptenGlue(code, key) {
     } catch (e) {
         throw new Drpy3Error('wasm', 'load', `emscripten 胶水执行失败: ${e.message} @${key}`);
     }
-    const exported = module_.exports;
+    let exported = module_.exports;
+    // 脚本形态胶水（drpyS 遗风）：不挂 module.exports，而是把工厂挂到 globalThis
+    // （如 globalThis.CNTVModuleFactory = CNTVModule）——对比执行前后的全局函数键自动识别
+    const emptyExports = !exported || (typeof exported === 'object' && Object.keys(exported).length === 0);
+    if (emptyExports) {
+        const newFns = Object.getOwnPropertyNames(globalThis)
+            .filter((k) => !globalSnap.has(k) && typeof globalThis[k] === 'function');
+        if (newFns.length === 1) exported = globalThis[newFns[0]];
+    }
     if (typeof exported === 'function') {
         let settled = false;
         const ready = new Promise((resolve, reject) => {
@@ -107,14 +117,22 @@ async function loadEmscriptenGlue(code, key) {
             try {
                 inst = exported(arg);
             } catch (e) {
-                reject(new Drpy3Error('wasm', 'load', `emscripten 工厂调用失败: ${e.message} @${key}`));
+                reject(new Drpy3Error('wasm', 'load', `emscripten 工厂调用失败: ${e && e.message ? e.message : String(e)} @${key}`));
+                return;
+            }
+            // 同步就绪快路径：内嵌 wasm 的老式 emscripten 在工厂返回时运行时已就绪（导出齐备），
+            // 无需等待回调——避免 pthread/worker 构建在纯 Node 垫片下等待就绪回调挂起
+            if (inst && typeof inst === 'object' && typeof inst._jsmalloc === 'function' && inst.HEAP8) {
+                settled = true;
+                resolve(inst);
                 return;
             }
             if (inst && typeof inst.then === 'function') {
-                inst.then((m) => {
+                // emscripten MODULARIZE 的 Module 自带非标准 then（无 catch）——用 Promise.resolve 适配
+                Promise.resolve(inst).then((m) => {
                     settled = true;
                     resolve(m);
-                }).catch((e) => reject(new Drpy3Error('wasm', 'load', `emscripten 实例化 rejected: ${e && e.message || e} @${key}`)));
+                }, (e) => reject(new Drpy3Error('wasm', 'load', `emscripten 实例化 rejected: ${e && e.message || e} @${key}`)));
             } else if (inst && typeof inst.onRuntimeInitialized === 'function' && !arg.onRuntimeInitialized) {
                 inst.onRuntimeInitialized = () => {
                     settled = true;

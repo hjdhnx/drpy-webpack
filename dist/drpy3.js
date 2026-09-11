@@ -7,7 +7,8 @@
  * 用法（与 drpy2.js 双文件形态一致，引擎与库包同目录分发）：
  *   你的目录/
  *   ├── drpy3.js                    ← 本文件
- *   └── drpy-core-lite.min.js       ← 库全局包（CryptoJS/jinja/模板/pako/gbkTool…，peer 引用）
+ *   ├── drpy-core-lite.min.js       ← 库全局包（CryptoJS/jinja/模板/pako/gbkTool…，peer 引用）
+ *   ├── drpy3-peer.js / drpy3-globals-capture.js ← peer 装载链（原生全局守卫，构建时生成）
  *
  *   import { Runtime } from './drpy3.js';
  *   const rt = new Runtime({ req, pdfh, pdfa, pd });   // HostEnv 注入，详见设计文档 §7
@@ -82,6 +83,31 @@ var peer_exports = {};
 
 // src/drpy3/lib/native-globals.js
 var nativeWasm = globalThis.WebAssembly;
+var nativeUint8ArrayFromBase64 = typeof Uint8Array.fromBase64 === "function" ? Uint8Array.fromBase64 : null;
+if (!nativeUint8ArrayFromBase64) {
+  const B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const B64_LOOKUP = new Int8Array(128).fill(-1);
+  for (let i = 0; i < 64; i++) B64_LOOKUP[B64_ALPHABET.charCodeAt(i)] = i;
+  B64_LOOKUP["-".charCodeAt(0)] = 62;
+  B64_LOOKUP["_".charCodeAt(0)] = 63;
+  const B64_RE = /^(?:[A-Za-z0-9+/-]{4})*(?:[A-Za-z0-9+/-]{2}==|[A-Za-z0-9+/-]{3}=)?$/;
+  Uint8Array.fromBase64 = function(string, options) {
+    const clean2 = String(string).replace(/\s/g, "");
+    if (!B64_RE.test(clean2)) throw new TypeError("Invalid base64 string");
+    const stripPad = clean2.replace(/=+$/, "");
+    const out = new Uint8Array(Math.floor(stripPad.length * 3 / 4));
+    let o = 0, buffer = 0, bits = 0;
+    for (const ch of stripPad) {
+      buffer = buffer << 6 | B64_LOOKUP[ch.charCodeAt(0)];
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        out[o++] = buffer >> bits & 255;
+      }
+    }
+    return out;
+  };
+}
 var nativeFetch = globalThis.fetch;
 var nativeTextEncoder = globalThis.TextEncoder;
 var nativeConsoleError = console.error;
@@ -92,7 +118,7 @@ console.error = function drpy3QuietConsoleError(...args) {
 
 // src/drpy3/lib/peer.js
 __reExport(peer_exports, drpy_core_lite_min_star);
-import * as drpy_core_lite_min_star from "./drpy-core-lite.min.js";
+import * as drpy_core_lite_min_star from "./drpy3-peer.js";
 if (nativeWasm && globalThis.WebAssembly !== nativeWasm) globalThis.WebAssembly = nativeWasm;
 if (nativeFetch && globalThis.fetch !== nativeFetch) globalThis.fetch = nativeFetch;
 if (nativeTextEncoder && globalThis.TextEncoder !== nativeTextEncoder) globalThis.TextEncoder = nativeTextEncoder;
@@ -670,6 +696,7 @@ async function compileWasmBytes(bytes) {
 async function loadEmscriptenGlue(code, key) {
   const shim = makeShim();
   const module_ = { exports: {} };
+  const globalSnap = new Set(Object.getOwnPropertyNames(globalThis).filter((k) => typeof globalThis[k] === "function"));
   let factory;
   try {
     const fn = new Function(
@@ -712,7 +739,12 @@ async function loadEmscriptenGlue(code, key) {
   } catch (e) {
     throw new Drpy3Error("wasm", "load", `emscripten \u80F6\u6C34\u6267\u884C\u5931\u8D25: ${e.message} @${key}`);
   }
-  const exported = module_.exports;
+  let exported = module_.exports;
+  const emptyExports = !exported || typeof exported === "object" && Object.keys(exported).length === 0;
+  if (emptyExports) {
+    const newFns = Object.getOwnPropertyNames(globalThis).filter((k) => !globalSnap.has(k) && typeof globalThis[k] === "function");
+    if (newFns.length === 1) exported = globalThis[newFns[0]];
+  }
   if (typeof exported === "function") {
     let settled = false;
     const ready = new Promise((resolve, reject) => {
@@ -726,14 +758,19 @@ async function loadEmscriptenGlue(code, key) {
       try {
         inst = exported(arg);
       } catch (e) {
-        reject(new Drpy3Error("wasm", "load", `emscripten \u5DE5\u5382\u8C03\u7528\u5931\u8D25: ${e.message} @${key}`));
+        reject(new Drpy3Error("wasm", "load", `emscripten \u5DE5\u5382\u8C03\u7528\u5931\u8D25: ${e && e.message ? e.message : String(e)} @${key}`));
+        return;
+      }
+      if (inst && typeof inst === "object" && typeof inst._jsmalloc === "function" && inst.HEAP8) {
+        settled = true;
+        resolve(inst);
         return;
       }
       if (inst && typeof inst.then === "function") {
-        inst.then((m) => {
+        Promise.resolve(inst).then((m) => {
           settled = true;
           resolve(m);
-        }).catch((e) => reject(new Drpy3Error("wasm", "load", `emscripten \u5B9E\u4F8B\u5316 rejected: ${e && e.message || e} @${key}`)));
+        }, (e) => reject(new Drpy3Error("wasm", "load", `emscripten \u5B9E\u4F8B\u5316 rejected: ${e && e.message || e} @${key}`)));
       } else if (inst && typeof inst.onRuntimeInitialized === "function" && !arg.onRuntimeInitialized) {
         inst.onRuntimeInitialized = () => {
           settled = true;
