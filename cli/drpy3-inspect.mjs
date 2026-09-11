@@ -111,6 +111,8 @@ async function inspectSource(relFile) {
     head(`⑤ detail（二级详情，vod_id=${String(vodId).slice(0, 60) || '（无）'}）`);
     if (!vodId) {
         line(`\x1b[33m⚠ search/category 均未取得 vod_id，跳过 detail/play\x1b[0m`);
+        line(`\x1b[2m说明：live 真站对该源的请求返回了空数据（演示稿取参与真站实际接口不匹配，或本机网络对该接口不可达）。\x1b[0m`);
+        line(`\x1b[2m查看标准数据形态可跑离线回放：node cli/drpy3-test.mjs ${relFile} --replay\x1b[0m`);
         head(`⚠️ ${srcName} 无可用 vod_id，终止后续环节`);
         return;
     }
