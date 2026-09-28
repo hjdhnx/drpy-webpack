@@ -140,6 +140,21 @@ JSEncrypt.prototype.decryptUnicodeLong = JSEncrypt.prototype.decrypt;
 
 const JSONPath = globalThis.JSONPath; // jsonpathplus.min.js side-effect 挂全局
 
+// ── 库全局挂载（qjs 源环境补全，2026-09-28 七星猫d3 实锤）──
+// 上游 loader 中性求值只给源体传 defineSource/lib 两形参，源内裸名 CryptoJS
+// 探测链（`typeof CryptoJS !== 'undefined'` → globalThis._nodeCrypto →
+// require('crypto')）在 qjs 环境三条全落空（无 require、无 node 全局）→
+// "No crypto library available"。dr2 源看得见库是「源码拍平同模块作用域」的
+// 副产品；dr3 native module 求值必须显式挂 Context 全局——与 so 注入
+// cheerio/jinja/JSONPath 同形态。qjs worker 新源互斥重建（单 Context 单源），
+// 无跨源污染面。⚠️ 勿挂 cheerio（会覆盖 so 的 C 版 Lexbor，纯 JS 化退化）；
+// jinja/JSONPath/Buffer 已由各自 side-effect eval/so 挂好，勿重复。
+globalThis.CryptoJS = CryptoJS;
+globalThis.JSEncrypt = JSEncrypt;
+globalThis.pako = pako;
+globalThis.gbkTool = gbkTool;
+globalThis.模板 = template;
+
 // ── cheerio 补丁（与 core-lite 一致）：只保留 jinja2/jp，pdf 系列交给壳子 ──
 const cheerio = {
     jinja2(tpl, obj) {
