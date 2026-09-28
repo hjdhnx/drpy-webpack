@@ -1,30 +1,30 @@
-// drpy-core-qjs.js —— QJS so 适配版库包 v2（drpy-core-lite 的 so 化变体，导出面兼容）
+// drpy-core-qjs.js —— QJS so 适配版库包 v4（drpy-core-lite 的 so 化变体，导出面兼容）
 //
 // 目标宿主：libquickjs_bridge.so（DsPlayer plugin_qjs，与 drpy2 同引擎）——启动即注入
-// 全局 cheerio(Lexbor C)/Buffer/TextEncoder(GBK)/TextDecoder/zlib/WebAssembly(wasm3)。
+// 全局 cheerio(Lexbor C)/Buffer/TextEncoder(GBK)/TextDecoder/zlib/WebAssembly(wasm3)/
+// crypto(WebCrypto 同步 C 桥)。
 //
-// v3（2026-09-28）：库来源对齐 dr2 适配包（assets/qjs/drpy2，真机跑通的精简封装）——
-//   jsencrypt.min.js+node-rsa.min.js(394KB) → jsencrypt-d2.min.js(4.7KB)
-//     WebCrypto subtle 同步实现（so 的 subtle 是同步 C 桥，dr2 真机验证）+
-//     UTF-8 分段（encrypt 本身即 encryptUnicodeLong 语义，下方补别名）；
-//     NODERSA 导出保留但恒 undefined——dr3 crypto.js rsaX 的
-//     `typeof JSEncrypt === 'function'` 恒真，NODERSA 分支为死代码。
-//     dll/真机 acceptance 实测 rsaX 中英文往返全过
-//   JSON5 砍（dr3 引擎零消费；JSON 容错在宿主 Dart 侧 JsonUtils）
+// v4（2026-09-28）：CryptoJS 定稿 dr2 适配包的 **crypto-d2**（C 核心覆盖 + 纯 JS
+//   回退的 CryptoJS 兼容层）——AES-CBC/GCM、MD5/SHA 族、HMAC、PBKDF2、EvpKDF 走
+//   so 的 crypto C 实现（性能优于官方纯 JS crypto-js），DES/RC4/Rabbit/ECB 等
+//   少数算法纯 JS 回退；dr3 cipherX 的 CBC+WordArray 正好命中 C 快路径。
+//   ⚠️ v3 曾误判 crypto-d2「AES encrypt 返回空密文」——那是 node 上测的：node
+//   的 subtle 是异步（返回 Promise），crypto-d2 按同步取值必炸；so 的 subtle 是
+//   同步 C 桥，dll acceptance 上 aesX 往返实测通过。node 测试需 mock 同步
+//   subtle（node:crypto createCipheriv 包装）。
+//   ⚠️ 勿换官方 crypto-js（纯 JS 性能退步且 UMD 在 esbuild bundle 里必须 eval
+//   全局求值才能取到，见 git 历史 v3）；勿用 node:crypto 类 CJS polyfill。
+//   jsencrypt-d2.min.js(4.7KB)：WebCrypto subtle 同步实现 + UTF-8 分段（encrypt
+//   本身即 encryptUnicodeLong 语义，下方补别名）；NODERSA 导出保留但恒
+//   undefined——dr3 crypto.js rsaX 的 `typeof JSEncrypt === 'function'` 恒真，
+//   NODERSA 分支为死代码。dll acceptance 实测 rsaX 往返全过。
+//   JSON5 砍（dr3 引擎零消费；JSON 容错在宿主 Dart 侧 JsonUtils）。
 // 导出面与 drpy-core-lite 兼容（peer.js / src/drpy3/lib/* 零改动）。
-// ⚠️ 实测教训（勿重蹈）：crypto-d2 的 AES encrypt 静默返回空密文——对称
-// 加密面必须用官方实现；jinja 任何 esbuild 模块化打包都必炸——必须全局 eval。
+// ⚠️ jinja 任何 esbuild 模块化打包都必炸——必须全局 eval（见下方装载）。
 import template from './libs/模板.js';
 
-//   CryptoJS：**官方 crypto-js 全量单文件 UMD**（src/libs/crypto-js.min.js），
-//     装载与 jinja 同机制（?global 插件转字符串 + (0,eval) 全局求值 + UMD 三
-//     分支屏蔽）。⚠️ 实测教训（勿重蹈）：①dr2 适配包 crypto-d2 的 AES encrypt
-//     静默返回空密文（cipher 面被砍坏的壳）；②crypto-js 官方子模块链经 esbuild
-//     模块化打包后 AES 产物非合法 UTF-8；③UMD 直接 import（side-effect 或
-//     default）在 esbuild bundle 里 CJS 分支挂到包装局部，globalThis.CryptoJS
-//     恒 undefined（v1 起就如此，六环节不踩 crypto 没暴露）——只有 eval 全局
-//     求值形态在 dll acceptance 上实测通过。
-import cryptoJsSrc from './libs/crypto-js.min.js?global';
+// dr2 精简封装（ESM default 导出，普通 import 即可——它本身是 ES module）
+import CryptoJS from './libs/crypto-d2.min.js';
 import JSEncrypt from './libs/jsencrypt-d2.min.js';
 import './libs/jsonpathplus.min.js';
 // jinja 脚本语义装载：build 时经 jinja-global 插件转字符串（见 esbuild.config.cjs），
@@ -46,10 +46,6 @@ const WebAssembly = soRequire('WebAssembly');
 const TextEncoder = soRequire('TextEncoder'); // so 扩展版：构造可传编码（GBK），非 WHATWG 仅 UTF-8
 const TextDecoder = soRequire('TextDecoder');
 const zlib = soRequire('zlib');
-
-// crypto-js 全局求值（脚本语义，与 jinja 同机制）+ 从全局取回
-(0, eval)('var exports=undefined, module=undefined, define=undefined;\n' + cryptoJsSrc);
-const CryptoJS = soRequire('CryptoJS');
 
 // ── pako API 语义对齐（消费面：drpy3 lib/crypto.js 的 gzip/ungzip）──
 //   pako.gzip(String) → Uint8Array；pako.inflate(bytes, {to:'string'}) → string
